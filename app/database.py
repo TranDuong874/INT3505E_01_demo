@@ -27,15 +27,16 @@ Base = declarative_base()
 
 class Book(Base):
     __tablename__ = "books"
-    id = Column(Integer, primary_key=True, index=True)
+    isbn = Column(String, primary_key=True)
     book_name = Column(String, nullable=False)
+    author = Column(String, nullable=False)
 
     copies = relationship("BookCopy", back_populates="book") # Points to BookCopy.book
 
 class BookCopy(Base):
     __tablename__ = "book_copies"
     id = Column(Integer, primary_key=True, index=True)
-    book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
+    isbn = Column(String, ForeignKey("books.isbn"), nullable=False)
 
     is_borrowed = Column(Boolean, default=False, nullable=False)
 
@@ -54,7 +55,7 @@ class Borrow(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
+    isbn = Column(String, ForeignKey("books.isbn"), nullable=False)
     copy_id = Column(Integer, ForeignKey("book_copies.id"), nullable=False)
 
     start_date = Column(DateTime, default=datetime.date.today)
