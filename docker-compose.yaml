@@ -8,3 +8,5 @@ services:
       POSTGRES_DB: mydb
     ports:
       - "5432:5432"
+  app:
+    
