@@ -7,6 +7,7 @@ from sqlalchemy import engine
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 
@@ -17,9 +18,18 @@ DATABASE_PORT = os.getenv("DATABASE_PORT")
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 
 # postgresql://user:password@host:port/dbname
-DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
+# DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
+# Instead of localhost
+DATABASE_URL = "postgresql://postgres:postgres@db:5432/mydb"
 
-engine = engine.create_engine(DATABASE_URL, echo=True)
+for i in range(10):
+    try:
+        engine = engine.create_engine(DATABASE_URL)
+        engine.connect()
+        break
+    except Exception as e:
+        print("Waiting for Postgres...")
+        time.sleep(2)
 
 LocalSession = sessionmaker(bind=engine)
 

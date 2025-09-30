@@ -1,7 +1,7 @@
 from flask import Flask
 from flask import request, jsonify
 from markupsafe import escape
-from .database import Base, engine, User, LocalSession, Book, BookCopy, Borrow
+from database import Base, engine, User, LocalSession, Book, BookCopy, Borrow
 import json
 import datetime
 from sqlalchemy.orm import joinedload
@@ -290,3 +290,6 @@ def get_user_info_by_id(user_id):
         return jsonify({"error": str(e)}), 400
     finally:
         session.close()
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
