@@ -5,9 +5,19 @@ from sqlalchemy import ForeignKey
 import datetime
 from sqlalchemy import engine
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+DATABASE_USER = os.getenv("DATABASE_USER")
+DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
+DATABASE_HOST = os.getenv("DATABASE_HOST")
+DATABASE_PORT = os.getenv("DATABASE_PORT")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
 
 # postgresql://user:password@host:port/dbname
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/mydb"
+DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
 
 engine = engine.create_engine(DATABASE_URL, echo=True)
 
