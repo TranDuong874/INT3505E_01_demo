@@ -1,8 +1,10 @@
 from flask import Flask
 from flask import request, jsonify
 from markupsafe import escape
-from .database import Base, engine, User, LocalSession, Book, BookCopy
+from .database import Base, engine, User, LocalSession, Book, BookCopy, Borrow
 import json
+import datetime
+from sqlalchemy.orm import joinedload
 
 Base.metadata.create_all(bind=engine)
 
@@ -65,10 +67,7 @@ def get_all_users():
     finally:
         session.close()
 
-# Get user renting information by name
-
-# Get all books and available copies (count)
-
+# ==== Book actions ====
 # Create a borrow (Rent book)
 @app.route('/books', methods=['POST'])
 def add_book():
@@ -119,6 +118,175 @@ def add_book():
     finally:
         session.close()
 
-# Return book
+@app.route('/books/borrow/', methods=['POST'])
+def borrow_book():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    copy_id = data.get('copy_id')
 
-# Add book
+    if user_id is None:
+        return jsonify({"error": "user_id not provided"}), 400
+    if copy_id is None:
+        return jsonify({"error": "copy_id not provided"}), 400
+
+    start_date = datetime.date.today()
+
+    try:
+        session = LocalSession()
+
+        book_copy = session.query(BookCopy).filter_by(id=copy_id).first()
+        if not book_copy:
+            return jsonify({
+                "error": "Book copy not found"
+            }), 404
+        if book_copy.is_borrowed:
+            return jsonify({
+                "error": "Book copy already borrowed"
+            }), 400
+
+        new_borrow = Borrow(
+            user_id = user_id,
+            isbn = book_copy.isbn,
+            copy_id = copy_id,
+            start_date=start_date,
+            end_date=None
+        )
+        session.add(new_borrow)
+
+        book_copy.is_borrowed = True
+
+        session.commit()
+
+        return jsonify({
+            "message": "Book borrowed successfully",
+            "borrow_id": new_borrow.id
+        }), 200
+
+    except Exception as e:
+        session.rollback()
+        return jsonify({
+            "error": str(e)
+        }), 400
+    finally:
+        session.close()
+
+
+
+# Return book
+@app.route('/books/return', methods=['POST'])
+def return_book():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    copy_id = data.get('copy_id')
+
+    if user_id is None:
+        return jsonify({"error": "user_id not provided"}), 400
+    if copy_id is None:
+        return jsonify({"error": "copy_id not provided"}), 400
+
+
+    try:
+        session = LocalSession()
+
+        book_copy = session.query(BookCopy).filter_by(id=copy_id).first()
+        if not book_copy:
+            return jsonify({
+                "error": "Book copy not found"
+            }), 404
+        if not book_copy.is_borrowed:
+            return jsonify({
+                "error": "Book copy is not borrowed"
+            }), 400
+
+        book_copy.is_borrowed = False
+            
+        borrow_record = session.query(Borrow).filter_by(user_id=user_id, copy_id=copy_id).first()
+        borrow_record.end_date = datetime.date.today()
+
+        session.commit()
+
+        return jsonify({
+            "message": "Book returned successfully",
+            "start_date" : borrow_record.start_date,
+            "end_date" : borrow_record.end_date,
+            "borrowed_length" : (borrow_record.end_date - borrow_record.start_date).days,
+            "borrow_id": borrow_record.id
+        }), 200
+
+    except Exception as e:
+        session.rollback()
+        return jsonify({
+            "error": str(e)
+        }), 400
+    finally:
+        session.close()
+
+@app.route("/books", methods=["GET"])
+def get_all_books():
+    try:
+        session = LocalSession()
+        n_books = request.args.get('limit', 50, type=int)
+
+        book_list = session.query(Book).options(joinedload(Book.copies)).limit(n_books).all()
+
+        result = []
+        for book in book_list:
+            result.append({
+                "id": book.id,
+                "isbn": getattr(book, "isbn", None),
+                "book_name": book.book_name,
+                "author": getattr(book, "author", None),
+                "total_copies": len(book.copies),
+                "available_copies": sum(not copy.is_borrowed for copy in book.copies)
+            })
+
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+from flask import jsonify
+
+@app.route("/users/<int:user_id>", methods=["GET"])
+def get_user_info_by_id(user_id):
+    try:
+        session = LocalSession()
+
+        user = session.query(User).filter_by(id=user_id).first()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        borrow_records = session.query(Borrow).filter_by(user_id=user_id).all()
+
+        books_info = []
+        for record in borrow_records:
+            copy = session.query(BookCopy).filter_by(id=record.copy_id).first()
+            if not copy:
+                continue 
+            
+            book = session.query(Book).filter_by(isbn=copy.isbn).first()
+            if not book:
+                continue 
+
+            books_info.append({
+                "copy_id": copy.id,
+                "isbn": getattr(book, "isbn", None),
+                "book_name": book.book_name,
+                "author": getattr(book, "author", None),
+                "is_borrowed": copy.is_borrowed,
+                "start_date": record.start_date.isoformat() if record.start_date else None,
+                "end_date": record.end_date.isoformat() if record.end_date else None
+            })
+
+        return jsonify({
+            "user_id": user.id,
+            "username": user.username,
+            "borrowed_books": books_info
+        }), 200
+
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
