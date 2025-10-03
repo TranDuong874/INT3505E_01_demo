@@ -118,7 +118,7 @@ def add_book():
     finally:
         session.close()
 
-@app.route('/books/borrow/', methods=['POST'])
+@app.route('/borrows', methods=['POST'])
 def borrow_book():
     data = request.get_json()
     user_id = data.get('user_id')
@@ -173,7 +173,7 @@ def borrow_book():
 
 
 # Return book
-@app.route('/books/return', methods=['POST'])
+@app.route('/returns', methods=['POST'])
 def return_book():
     data = request.get_json()
     user_id = data.get('user_id')
