@@ -1,5 +1,4 @@
-from flask import Flask
-from flask import request, jsonify
+from flask import Flask, request, jsonify, make_response
 from markupsafe import escape
 from database import Base, engine, User, LocalSession, Book, BookCopy, Borrow
 import json
@@ -10,6 +9,17 @@ Base.metadata.create_all(bind=engine)
 
 app = Flask(__name__)
 
+@app.after_request
+def add_header(response):
+    # Add cache headers
+    if request.method == 'GET':
+        response.cache_control.public = True
+        response.cache_control.max_age = 300  # Cache for 5 minutes
+        response.cache_control.must_revalidate = True
+    else:
+        response.cache_control.no_store = True  # Stronger than no-cache
+    return response
+
 # ==== User Actions ====
 # Add user
 @app.route('/users', methods=['POST'])
@@ -18,21 +28,33 @@ def create_user():
     username = data.get("username")
     
     if not username:
-        return json({
-            'error' : 'Username not provided',
+        return jsonify({
+            'error': 'Username not provided',
+            'status': 400
         }), 400
 
     session = LocalSession()
 
     try:
-        new_user = User(username = username)
+        new_user = User(username=username)
         session.add(new_user)
         session.commit()
         session.refresh(new_user)
-        return jsonify({
-            "id" : new_user.id, 
-            "username" : new_user.username
-        }), 201
+        
+        response = {
+            "data": {
+                "id": new_user.id,
+                "username": new_user.username,
+                "type": "user"
+            },
+            "_links": {
+                "self": f"/users/{new_user.id}",
+                "borrows": f"/users/{new_user.id}/borrows"
+            }
+        }
+        return jsonify(response), 201, {
+            'Location': f"/users/{new_user.id}"
+        }
     except Exception as e:
         session.rollback()
         return jsonify({
@@ -142,7 +164,7 @@ def borrow_book():
         if book_copy.is_borrowed:
             return jsonify({
                 "error": "Book copy already borrowed"
-            }), 400
+            }, 400)
 
         new_borrow = Borrow(
             user_id = user_id,
@@ -157,10 +179,23 @@ def borrow_book():
 
         session.commit()
 
-        return jsonify({
-            "message": "Book borrowed successfully",
-            "borrow_id": new_borrow.id
-        }), 200
+        response = {
+            "data": {
+                "id": new_borrow.id,
+                "user_id": user_id,
+                "copy_id": copy_id,
+                "start_date": start_date.isoformat(),
+                "type": "borrow"
+            },
+            "_links": {
+                "self": f"/borrows/{new_borrow.id}",
+                "user": f"/users/{user_id}",
+                "book_copy": f"/books/{book_copy.isbn}/copies/{copy_id}"
+            }
+        }
+        return jsonify(response), 201, {
+            'Location': f"/borrows/{new_borrow.id}"
+        }
 
     except Exception as e:
         session.rollback()
@@ -169,8 +204,6 @@ def borrow_book():
         }), 400
     finally:
         session.close()
-
-
 
 # Return book
 @app.route('/returns', methods=['POST'])
@@ -226,21 +259,51 @@ def get_all_books():
     try:
         session = LocalSession()
         n_books = request.args.get('limit', 50, type=int)
+        page = request.args.get('page', 1, type=int)
+        offset = (page - 1) * n_books
 
-        book_list = session.query(Book).options(joinedload(Book.copies)).limit(n_books).all()
+        book_list = session.query(Book).options(joinedload(Book.copies))\
+            .offset(offset).limit(n_books).all()
+        total_books = session.query(Book).count()
 
-        result = []
+        result = {
+            "data": [],
+            "metadata": {
+                "total": total_books,
+                "page": page,
+                "per_page": n_books,
+                "total_pages": (total_books + n_books - 1) // n_books
+            },
+            "_links": {
+                "self": f"/books?page={page}&limit={n_books}",
+                "first": f"/books?page=1&limit={n_books}",
+                "last": f"/books?page={(total_books + n_books - 1) // n_books}&limit={n_books}"
+            }
+        }
+
+        if page > 1:
+            result["_links"]["prev"] = f"/books?page={page-1}&limit={n_books}"
+        if page < (total_books + n_books - 1) // n_books:
+            result["_links"]["next"] = f"/books?page={page+1}&limit={n_books}"
+
         for book in book_list:
-            result.append({
+            book_data = {
                 "id": book.id,
                 "isbn": getattr(book, "isbn", None),
                 "book_name": book.book_name,
                 "author": getattr(book, "author", None),
                 "total_copies": len(book.copies),
-                "available_copies": sum(not copy.is_borrowed for copy in book.copies)
-            })
+                "available_copies": sum(not copy.is_borrowed for copy in book.copies),
+                "_links": {
+                    "self": f"/books/{book.isbn}",
+                    "copies": f"/books/{book.isbn}/copies"
+                }
+            }
+            result["data"].append(book_data)
 
-        return jsonify(result), 200
+        response = make_response(jsonify(result))
+        return response, 200
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     finally:
