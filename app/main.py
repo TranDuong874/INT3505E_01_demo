@@ -108,25 +108,59 @@ def add_book():
     isbn = data.get('isbn')
     book_name = data.get('book_name', 'unknown')
     author = data.get('author', 'unknown')
-    count = data.get('count', 1)
-    count = max(count, 1)
+
     if not isbn:
+        return jsonify({"error": "ISBN is required"}), 400
+
+    session = LocalSession()
+
+    try:
+        # Check if book exists
+        book = session.query(Book).filter_by(isbn=isbn).first()
+        if book:
+            return jsonify({
+                "error": f"Book with ISBN {isbn} already exists",
+                "_links": {
+                    "self": f"/books/{isbn}",
+                    "add_copies": f"/copies/{isbn}"
+                }
+            }), 409  # Conflict
+
+        # Create new book
+        book = Book(isbn=isbn, book_name=book_name, author=author)
+        session.add(book)
+        session.commit()
+
         return jsonify({
-            "error": "ISBN is required"}), 400
+            "data": {
+                "isbn": book.isbn,
+                "book_name": book.book_name,
+                "author": book.author,
+                "type": "book"
+            },
+            "_links": {
+                "self": f"/books/{isbn}",
+                "add_copies": f"/copies/{isbn}"
+            }
+        }), 201
+
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route('/copies/<isbn>', methods=['POST'])
+def add_book_copies(isbn):
+    data = request.get_json()
+    count = max(data.get('count', 1), 1)
 
     session = LocalSession()
 
     try:
         book = session.query(Book).filter_by(isbn=isbn).first()
-        warning = ""
-
-        if book:
-            if book.book_name != book_name:
-                warning = f"WARNING: A book with ISBN {isbn} already exists. Using existing book name: {book.book_name}"
-        else:
-            book = Book(isbn=isbn, book_name=book_name, author=author)
-            session.add(book)
-            session.flush()  # assigns book.id without committing
+        if not book:
+            return jsonify({"error": f"Book with ISBN {isbn} not found"}), 404
 
         book_copies = []
         for _ in range(count):
@@ -137,17 +171,29 @@ def add_book():
         session.commit()
 
         return jsonify({
-            "message": f"{warning}\nAdded {max(count, 1)} copies for book {book.book_name}",
-            "book": {"isbn": book.isbn, "book_name": book.book_name, "author": book.author},
-            "added_copies": [{"id": cpy.id} for cpy in book_copies]
+            "data": {
+                "isbn": book.isbn,
+                "book_name": book.book_name,
+                "added_copies": [
+                    {
+                        "id": copy.id,
+                        "_links": {
+                            "self": f"/books/{isbn}/copies/{copy.id}"
+                        }
+                    } for copy in book_copies
+                ],
+                "count": len(book_copies),
+                "type": "book_copies"
+            },
+            "_links": {
+                "book": f"/books/{isbn}",
+                "all_copies": f"/books/{isbn}/copies"
+            }
         }), 201
 
     except Exception as e:
         session.rollback()
-        return jsonify({
-            "error": str(e)
-        }), 400
-
+        return jsonify({"error": str(e)}), 400
     finally:
         session.close()
 
@@ -274,10 +320,9 @@ def get_all_books():
         result = {
             "data": [
                 {
-                    "id": book.id,
-                    "isbn": getattr(book, "isbn", None),
+                    "isbn": book.isbn,
                     "book_name": book.book_name,
-                    "author": getattr(book, "author", None),
+                    "author": book.author,
                     "total_copies": len(book.copies),
                     "available_copies": sum(not copy.is_borrowed for copy in book.copies)
                 }
