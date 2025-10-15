@@ -1,9 +1,10 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, send_from_directory, render_template
 from markupsafe import escape
 from database import Base, engine, User, LocalSession, Book, BookCopy, Borrow
 import json
 import datetime
 from sqlalchemy.orm import joinedload
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -306,6 +307,7 @@ def return_book(borrow_id):
 
 @app.route("/books", methods=["GET"])
 def get_all_books():
+
     try:
         session = LocalSession()
         page = request.args.get('page', 1, type=int)
@@ -489,6 +491,14 @@ def get_all_borrows():
     finally:
         session.close()
 
+@app.route("/openapi.yaml")
+def serve_openapi():
+    return send_from_directory(".", "docs/openapi.yaml")
+
+@app.route("/swagger_docs")
+def swagger_ui():
+    return render_template("swagger.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+    
