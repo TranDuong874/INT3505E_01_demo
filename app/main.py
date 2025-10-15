@@ -178,9 +178,9 @@ def add_book_copies(isbn):
                 "added_copies": [
                     {
                         "id": copy.id,
-                        "_links": {
-                            "self": f"/books/{isbn}/copies/{copy.id}"
-                        }
+                        # "_links": {
+                        #     "self": f"/copies/{copy.id}/"
+                        # }
                     } for copy in book_copies
                 ],
                 "count": len(book_copies),
@@ -188,7 +188,6 @@ def add_book_copies(isbn):
             },
             "_links": {
                 "book": f"/books/{isbn}",
-                "all_copies": f"/books/{isbn}/copies"
             }
         }), 201
 
@@ -248,7 +247,6 @@ def borrow_book():
             "_links": {
                 "self": f"/borrows/{new_borrow.id}",
                 "user": f"/users/{user_id}",
-                "book_copy": f"/books/{book_copy.isbn}/copies/{copy_id}"
             }
         }
         return jsonify(response), 201, {
@@ -295,7 +293,7 @@ def return_book(borrow_id):
             "_links": {
                 "self": f"/borrows/{borrow_record.id}",
                 "user": f"/users/{borrow_record.user_id}",
-                "book_copy": f"/books/{book_copy.isbn}/copies/{borrow_record.copy_id}"
+                # "book_copy": f"/books/{book_copy.isbn}/copies/{borrow_record.copy_id}"
             }
         }), 200
 

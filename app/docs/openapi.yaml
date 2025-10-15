@@ -1,45 +1,39 @@
 openapi: 3.0.3
 info:
   title: Library Management API
-  description: A RESTful API for managing library books, users, and borrowing operations
+  description: A RESTful API for managing users, books, book copies, and borrows in a library system. Supports CRUD operations, pagination, search, and HATEOAS-style links.
   version: 1.0.0
-  contact:
-    name: API Support
-
 servers:
   - url: http://localhost:5000
-    description: Development server
-
+    description: Local development server
 tags:
   - name: Users
-    description: User management operations
+    description: Operations related to library users
   - name: Books
-    description: Book and inventory management
+    description: Operations related to books and their metadata
   - name: Copies
-    description: Book copy management
+    description: Operations related to physical book copies
   - name: Borrows
-    description: Borrowing and return operations
-
+    description: Operations related to borrowing and returning books
+  - name: Docs
+    description: API documentation endpoints
 paths:
   /users:
     post:
       tags:
         - Users
       summary: Create a new user
-      description: Register a new user in the library system
-      operationId: createUser
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - username
               properties:
                 username:
                   type: string
-                  example: john_doe
+              required:
+                - username
       responses:
         '201':
           description: User created successfully
@@ -47,7 +41,6 @@ paths:
             Location:
               schema:
                 type: string
-              description: URL of the created user resource
           content:
             application/json:
               schema:
@@ -58,10 +51,8 @@ paths:
                     properties:
                       id:
                         type: integer
-                        example: 1
                       username:
                         type: string
-                        example: john_doe
                       type:
                         type: string
                         example: user
@@ -70,42 +61,32 @@ paths:
                     properties:
                       self:
                         type: string
-                        example: /users/1
                       borrows:
                         type: string
-                        example: /users/1/borrows
         '400':
-          description: Bad request
+          description: Bad request (e.g., username not provided or error)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    
     get:
       tags:
         - Users
-      summary: Get all users
-      description: Retrieve a paginated list of all users
-      operationId: getAllUsers
+      summary: Get all users with pagination
       parameters:
         - name: page
           in: query
-          description: Page number
           schema:
             type: integer
             default: 1
-            minimum: 1
         - name: per_page
           in: query
-          description: Number of items per page
           schema:
             type: integer
             default: 10
-            minimum: 1
-            maximum: 100
       responses:
         '200':
-          description: Successful response
+          description: List of users
           content:
             application/json:
               schema:
@@ -123,29 +104,25 @@ paths:
                   pagination:
                     $ref: '#/components/schemas/Pagination'
         '404':
-          description: Not found
+          description: Error retrieving users
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   /users/{user_id}:
     get:
       tags:
         - Users
-      summary: Get user information
-      description: Retrieve detailed information about a specific user including their borrowing history
-      operationId: getUserById
+      summary: Get user details and borrowed books
       parameters:
         - name: user_id
           in: path
           required: true
-          description: User ID
           schema:
             type: integer
       responses:
         '200':
-          description: Successful response
+          description: User information
           content:
             application/json:
               schema:
@@ -176,7 +153,6 @@ paths:
                         end_date:
                           type: string
                           format: date
-                          nullable: true
         '404':
           description: User not found
           content:
@@ -184,42 +160,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '400':
-          description: Bad request
+          description: Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   /books:
     post:
       tags:
         - Books
       summary: Add a new book
-      description: Create a new book entry in the library catalog
-      operationId: addBook
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - isbn
               properties:
                 isbn:
                   type: string
-                  example: "978-0-13-110362-7"
                 book_name:
                   type: string
-                  example: "The C Programming Language"
-                  default: "unknown"
+                  default: unknown
                 author:
                   type: string
-                  example: "Brian Kernighan, Dennis Ritchie"
-                  default: "unknown"
+                  default: unknown
+              required:
+                - isbn
       responses:
         '201':
-          description: Book created successfully
+          description: Book created
           content:
             application/json:
               schema:
@@ -266,32 +236,24 @@ paths:
                         type: string
                       add_copies:
                         type: string
-    
     get:
       tags:
         - Books
-      summary: Get all books
-      description: Retrieve a paginated list of all books with availability information
-      operationId: getAllBooks
+      summary: Get all books with pagination and copy stats
       parameters:
         - name: page
           in: query
-          description: Page number
           schema:
             type: integer
             default: 1
-            minimum: 1
         - name: per_page
           in: query
-          description: Number of items per page
           schema:
             type: integer
             default: 50
-            minimum: 1
-            maximum: 100
       responses:
         '200':
-          description: Successful response
+          description: List of books
           content:
             application/json:
               schema:
@@ -315,50 +277,41 @@ paths:
                   pagination:
                     $ref: '#/components/schemas/Pagination'
         '400':
-          description: Bad request
+          description: Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   /books/search:
     get:
       tags:
         - Books
-      summary: Search books
-      description: Search for books by name, author, ISBN, or all fields
-      operationId: searchBooks
+      summary: Search books by name, author, ISBN, or all
       parameters:
         - name: q
           in: query
-          description: Search query
+          required: true
           schema:
             type: string
         - name: by
           in: query
-          description: Field to search by
           schema:
             type: string
             enum: [all, name, author, isbn]
             default: all
         - name: page
           in: query
-          description: Page number
           schema:
             type: integer
             default: 1
-            minimum: 1
         - name: per_page
           in: query
-          description: Number of items per page
           schema:
             type: integer
             default: 10
-            minimum: 1
-            maximum: 100
       responses:
         '200':
-          description: Successful response
+          description: Search results
           content:
             application/json:
               schema:
@@ -391,24 +344,20 @@ paths:
                       search_by:
                         type: string
         '400':
-          description: Bad request
+          description: Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   /copies/{isbn}:
     post:
       tags:
         - Copies
-      summary: Add book copies
-      description: Add one or more physical copies of a book to the inventory
-      operationId: addBookCopies
+      summary: Add copies to an existing book
       parameters:
         - name: isbn
           in: path
           required: true
-          description: Book ISBN
           schema:
             type: string
       requestBody:
@@ -420,12 +369,11 @@ paths:
               properties:
                 count:
                   type: integer
-                  minimum: 1
                   default: 1
-                  example: 3
+                  minimum: 1
       responses:
         '201':
-          description: Copies added successfully
+          description: Copies added
           content:
             application/json:
               schema:
@@ -445,11 +393,6 @@ paths:
                           properties:
                             id:
                               type: integer
-                            _links:
-                              type: object
-                              properties:
-                                self:
-                                  type: string
                       count:
                         type: integer
                       type:
@@ -460,8 +403,6 @@ paths:
                     properties:
                       book:
                         type: string
-                      all_copies:
-                        type: string
         '404':
           description: Book not found
           content:
@@ -469,43 +410,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '400':
-          description: Bad request
+          description: Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   /borrows:
     post:
       tags:
         - Borrows
-      summary: Borrow a book
-      description: Create a new borrow record when a user borrows a book copy
-      operationId: borrowBook
+      summary: Borrow a book copy
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - user_id
-                - copy_id
               properties:
                 user_id:
                   type: integer
-                  example: 1
                 copy_id:
                   type: integer
-                  example: 5
+              required:
+                - user_id
+                - copy_id
       responses:
         '201':
-          description: Book borrowed successfully
+          description: Borrow created
           headers:
             Location:
               schema:
                 type: string
-              description: URL of the created borrow record
           content:
             application/json:
               schema:
@@ -536,43 +471,35 @@ paths:
                       book_copy:
                         type: string
         '400':
-          description: Bad request (missing parameters or book already borrowed)
+          description: Bad request (e.g., already borrowed)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Book copy not found
+          description: Copy not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    
     get:
       tags:
         - Borrows
-      summary: Get all borrow records
-      description: Retrieve a paginated list of all borrow records
-      operationId: getAllBorrows
+      summary: Get all borrow records with pagination
       parameters:
         - name: page
           in: query
-          description: Page number
           schema:
             type: integer
             default: 1
-            minimum: 1
         - name: per_page
           in: query
-          description: Number of items per page
           schema:
             type: integer
             default: 50
-            minimum: 1
-            maximum: 100
       responses:
         '200':
-          description: Successful response
+          description: List of borrows
           content:
             application/json:
               schema:
@@ -595,33 +522,28 @@ paths:
                         end_date:
                           type: string
                           format: date
-                          nullable: true
                   pagination:
                     $ref: '#/components/schemas/Pagination'
         '400':
-          description: Bad request
+          description: Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   /borrows/{borrow_id}:
     patch:
       tags:
         - Borrows
-      summary: Return a book
-      description: Mark a borrowed book as returned by updating the borrow record
-      operationId: returnBook
+      summary: Return a borrowed book
       parameters:
         - name: borrow_id
           in: path
           required: true
-          description: Borrow record ID
           schema:
             type: integer
       responses:
         '200':
-          description: Book returned successfully
+          description: Book returned
           content:
             application/json:
               schema:
@@ -641,7 +563,6 @@ paths:
                     format: date
                   borrowed_length:
                     type: integer
-                    description: Number of days the book was borrowed
                   _links:
                     type: object
                     properties:
@@ -649,53 +570,57 @@ paths:
                         type: string
                       user:
                         type: string
-                      book_copy:
-                        type: string
         '404':
-          description: Borrow record not found
+          description: Borrow record or copy not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '400':
-          description: Bad request (book already returned or book copy not found)
+          description: Bad request (e.g., already returned)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
+  /openapi.yaml:
+    get:
+      tags:
+        - Docs
+      summary: Serve OpenAPI specification
+      responses:
+        '200':
+          description: OpenAPI YAML file
+          content:
+            text/yaml:
+              schema:
+                type: string
+  /swagger_docs:
+    get:
+      tags:
+        - Docs
+      summary: Serve Swagger UI for API documentation
+      responses:
+        '200':
+          description: HTML page for Swagger UI
+          content:
+            text/html:
+              schema:
+                type: string
 components:
   schemas:
-    Error:
-      type: object
-      properties:
-        error:
-          type: string
-          description: Error message
-        status:
-          type: integer
-          description: HTTP status code
-      example:
-        error: "Resource not found"
-        status: 404
-
     Pagination:
       type: object
       properties:
         page:
           type: integer
-          description: Current page number
         per_page:
           type: integer
-          description: Number of items per page
         total:
           type: integer
-          description: Total number of items
         pages:
           type: integer
-          description: Total number of pages
-      example:
-        page: 1
-        per_page: 10
-        total: 50
-        pages: 5
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
