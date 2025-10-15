@@ -14,10 +14,10 @@ def add_header(response):
     # Add cache headers
     if request.method == 'GET':
         response.cache_control.public = True
-        response.cache_control.max_age = 300  # Cache for 5 minutes
+        response.cache_control.max_age = 300 
         response.cache_control.must_revalidate = True
     else:
-        response.cache_control.no_store = True  # Stronger than no-cache
+        response.cache_control.no_store = True 
     return response
 
 # ==== User Actions ====
@@ -67,21 +67,32 @@ def create_user():
 # Get all users
 @app.route('/users', methods=['GET'])
 def get_all_users():
-    n_users = request.args.get('limit', default=10, type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    offset = (page - 1) * per_page
     session = LocalSession()
 
     try:
-        users = session.query(User).limit(n_users).all()
-        user_list = [
-            {
-                'id' : user.id,
-                'user_name' : user.username
+        total = session.query(User).count()
+        users = session.query(User).offset(offset).limit(per_page).all()
+        
+        result = {
+            "data": [
+                {
+                    'id': user.id,
+                    'username': user.username
+                }
+                for user in users
+            ],
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": (total + per_page - 1) // per_page
             }
-            for user in users
-        ]
+        }
+        return jsonify(result), 200
 
-        return jsonify(user_list), 200
-    
     except Exception as e:
         return jsonify({
             'error' : str(e)
@@ -258,48 +269,34 @@ def return_book():
 def get_all_books():
     try:
         session = LocalSession()
-        n_books = request.args.get('limit', 50, type=int)
         page = request.args.get('page', 1, type=int)
-        offset = (page - 1) * n_books
+        per_page = request.args.get('per_page', 50, type=int)
+        offset = (page - 1) * per_page
 
-        book_list = session.query(Book).options(joinedload(Book.copies))\
-            .offset(offset).limit(n_books).all()
-        total_books = session.query(Book).count()
+        # Get total count and paginated results
+        total = session.query(Book).count()
+        books = session.query(Book).options(joinedload(Book.copies))\
+            .offset(offset).limit(per_page).all()
 
         result = {
-            "data": [],
-            "metadata": {
-                "total": total_books,
+            "data": [
+                {
+                    "id": book.id,
+                    "isbn": getattr(book, "isbn", None),
+                    "book_name": book.book_name,
+                    "author": getattr(book, "author", None),
+                    "total_copies": len(book.copies),
+                    "available_copies": sum(not copy.is_borrowed for copy in book.copies)
+                }
+                for book in books
+            ],
+            "pagination": {
                 "page": page,
-                "per_page": n_books,
-                "total_pages": (total_books + n_books - 1) // n_books
-            },
-            "_links": {
-                "self": f"/books?page={page}&limit={n_books}",
-                "first": f"/books?page=1&limit={n_books}",
-                "last": f"/books?page={(total_books + n_books - 1) // n_books}&limit={n_books}"
+                "per_page": per_page,
+                "total": total,
+                "pages": (total + per_page - 1) // per_page
             }
         }
-
-        if page > 1:
-            result["_links"]["prev"] = f"/books?page={page-1}&limit={n_books}"
-        if page < (total_books + n_books - 1) // n_books:
-            result["_links"]["next"] = f"/books?page={page+1}&limit={n_books}"
-
-        for book in book_list:
-            book_data = {
-                "id": book.id,
-                "isbn": getattr(book, "isbn", None),
-                "book_name": book.book_name,
-                "author": getattr(book, "author", None),
-                "total_copies": len(book.copies),
-                "available_copies": sum(not copy.is_borrowed for copy in book.copies),
-                "_links": {
-                    "self": f"/books/{book.isbn}",
-                    "copies": f"/books/{book.isbn}/copies"
-                }
-            }
-            result["data"].append(book_data)
 
         response = make_response(jsonify(result))
         return response, 200
@@ -350,6 +347,41 @@ def get_user_info_by_id(user_id):
 
     except Exception as e:
         session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route('/borrows', methods=['GET'])
+def get_all_borrows():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    offset = (page - 1) * per_page
+    session = LocalSession()
+
+    try:
+        total = session.query(Borrow).count()
+        borrows = session.query(Borrow).offset(offset).limit(per_page).all()
+
+        result = {
+            "data": [
+                {
+                    "id": borrow.id,
+                    "user_id": borrow.user_id,
+                    "copy_id": borrow.copy_id,
+                    "start_date": borrow.start_date.isoformat() if borrow.start_date else None,
+                    "end_date": borrow.end_date.isoformat() if borrow.end_date else None
+                }
+                for borrow in borrows
+            ],
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": (total + per_page - 1) // per_page
+            }
+        }
+        return jsonify(result), 200
+    except Exception as e:
         return jsonify({"error": str(e)}), 400
     finally:
         session.close()
