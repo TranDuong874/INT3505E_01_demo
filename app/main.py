@@ -217,51 +217,44 @@ def borrow_book():
         session.close()
 
 # Return book
-@app.route('/returns', methods=['POST'])
-def return_book():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    copy_id = data.get('copy_id')
-
-    if user_id is None:
-        return jsonify({"error": "user_id not provided"}), 400
-    if copy_id is None:
-        return jsonify({"error": "copy_id not provided"}), 400
-
-
+# Return book by updating borrow record
+@app.route('/borrows/<int:borrow_id>', methods=['PATCH'])
+def return_book(borrow_id):
     try:
         session = LocalSession()
+        
+        borrow_record = session.query(Borrow).filter_by(id=borrow_id).first()
+        if not borrow_record:
+            return jsonify({"error": "Borrow record not found"}), 404
+            
+        if borrow_record.end_date:
+            return jsonify({"error": "Book already returned"}), 400
 
-        book_copy = session.query(BookCopy).filter_by(id=copy_id).first()
+        book_copy = session.query(BookCopy).filter_by(id=borrow_record.copy_id).first()
         if not book_copy:
-            return jsonify({
-                "error": "Book copy not found"
-            }), 404
-        if not book_copy.is_borrowed:
-            return jsonify({
-                "error": "Book copy is not borrowed"
-            }), 400
+            return jsonify({"error": "Book copy not found"}), 404
 
         book_copy.is_borrowed = False
-            
-        borrow_record = session.query(Borrow).filter_by(user_id=user_id, copy_id=copy_id).first()
         borrow_record.end_date = datetime.date.today()
 
         session.commit()
-
         return jsonify({
-            "message": "Book returned successfully",
-            "start_date" : borrow_record.start_date,
-            "end_date" : borrow_record.end_date,
-            "borrowed_length" : (borrow_record.end_date - borrow_record.start_date).days,
-            "borrow_id": borrow_record.id
+            "id": borrow_record.id,
+            "user_id": borrow_record.user_id,
+            "copy_id": borrow_record.copy_id,
+            "start_date": borrow_record.start_date.isoformat(),
+            "end_date": borrow_record.end_date.isoformat(),
+            "borrowed_length": (borrow_record.end_date - borrow_record.start_date).days,
+            "_links": {
+                "self": f"/borrows/{borrow_record.id}",
+                "user": f"/users/{borrow_record.user_id}",
+                "book_copy": f"/books/{book_copy.isbn}/copies/{borrow_record.copy_id}"
+            }
         }), 200
 
     except Exception as e:
         session.rollback()
-        return jsonify({
-            "error": str(e)
-        }), 400
+        return jsonify({"error": str(e)}), 400
     finally:
         session.close()
 
@@ -306,7 +299,72 @@ def get_all_books():
     finally:
         session.close()
 
-from flask import jsonify
+@app.route("/books/search", methods=["GET"])
+def search_books():
+    try:
+        session = LocalSession()
+        
+        # Search parameters
+        query = request.args.get('q', '').strip()
+        search_by = request.args.get('by', 'all')  # all, name, author, isbn
+        
+        # Pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        offset = (page - 1) * per_page
+        
+        # Base query with joins
+        base_query = session.query(Book).options(joinedload(Book.copies))
+        
+        # Apply search filters
+        if query:
+            if search_by == 'name':
+                base_query = base_query.filter(Book.book_name.ilike(f'%{query}%'))
+            elif search_by == 'author':
+                base_query = base_query.filter(Book.author.ilike(f'%{query}%'))
+            elif search_by == 'isbn':
+                base_query = base_query.filter(Book.isbn.ilike(f'%{query}%'))
+            else:  # search all fields
+                base_query = base_query.filter(
+                    (Book.book_name.ilike(f'%{query}%')) |
+                    (Book.author.ilike(f'%{query}%')) |
+                    (Book.isbn.ilike(f'%{query}%'))
+                )
+        
+        # Get total count and paginated results
+        total = base_query.count()
+        books = base_query.offset(offset).limit(per_page).all()
+        
+        result = {
+            "data": [
+                {
+                    "id": book.id,
+                    "isbn": getattr(book, "isbn", None),
+                    "book_name": book.book_name,
+                    "author": getattr(book, "author", None),
+                    "total_copies": len(book.copies),
+                    "available_copies": sum(not copy.is_borrowed for copy in book.copies)
+                }
+                for book in books
+            ],
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": (total + per_page - 1) // per_page
+            },
+            "search": {
+                "query": query,
+                "search_by": search_by
+            }
+        }
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
 
 @app.route("/users/<int:user_id>", methods=["GET"])
 def get_user_info_by_id(user_id):
@@ -385,6 +443,7 @@ def get_all_borrows():
         return jsonify({"error": str(e)}), 400
     finally:
         session.close()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
