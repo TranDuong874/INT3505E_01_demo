@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 
 copies_bp = Blueprint('copies', __name__, url_prefix='/books')
 
-@copies_bp.get('/<isbn>/copies/', methods=['POST'])
+@copies_bp.route('/<isbn>/copies/', methods=['POST'])
 def add_book_copies(isbn):
     data = request.get_json()
     count = max(data.get('count', 1), 1)
@@ -51,7 +51,7 @@ def add_book_copies(isbn):
     finally:
         session.close()
 
-@copies_bp.get('/<isbn>/copies', methods=['GET'])
+@copies_bp.route('/<isbn>/copies', methods=['GET'])
 def get_list_of_copies_by_book(isbn):
     session = LocalSession()
     try:

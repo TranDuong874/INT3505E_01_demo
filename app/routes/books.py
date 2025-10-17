@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 
 books_bp = Blueprint('books', __name__, url_prefix='/books')
 
-@books_bp.get('/', methods=['POST'])
+@books_bp.route('/', methods=['POST'])
 def add_book():
     data = request.get_json()
     isbn = data.get('isbn')
@@ -51,7 +51,7 @@ def add_book():
     finally:
         session.close()
 
-@books_bp.get("/", methods=["GET"])
+@books_bp.route("/", methods=["GET"])
 def get_all_books():
     session = LocalSession()
     try:
@@ -91,7 +91,7 @@ def get_all_books():
     finally:
         session.close()
 
-@books_bp.get("/search", methods=["GET"])
+@books_bp.route("/search", methods=["GET"])
 def search_books():
     session = LocalSession()
     try:

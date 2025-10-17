@@ -8,7 +8,6 @@ from routes.books import books_bp
 from routes.users import users_bp
 from routes.borrows import borrows_bp
 from routes.copies import copies_bp
-
 Base.metadata.create_all(bind=engine)
 
 app = Flask(__name__)
