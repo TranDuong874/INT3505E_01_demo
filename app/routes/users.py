@@ -1,8 +1,9 @@
 from flask import request, jsonify, Blueprint
 from database import LocalSession, User, Book, BookCopy, Borrow
+
 users_bp = Blueprint("users", __name__, url_prefix='/users')
 
-@users_bp.get('/users', methods=['POST'])
+@users_bp.get('/', methods=['POST'])
 def create_user():
     data = request.get_json()
     username = data.get("username")
@@ -45,7 +46,7 @@ def create_user():
         session.close()
         
 # Get all users
-@users_bp.get('/users', methods=['GET'])
+@users_bp.get('/', methods=['GET'])
 def get_all_users():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
@@ -81,7 +82,7 @@ def get_all_users():
         session.close()
 
 
-@users_bp.get("/users/<user_id>", methods=["GET"])
+@users_bp.get("/<user_id>", methods=["GET"])
 def get_user_info_by_id(user_id):
     session = LocalSession()
     try:
