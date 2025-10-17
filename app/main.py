@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 from routes.books import books_bp
 from routes.users import users_bp
 from routes.borrows import borrows_bp
+from routes.copies import copies_bp
 
 Base.metadata.create_all(bind=engine)
 
@@ -15,6 +16,7 @@ app = Flask(__name__)
 app.register_blueprint(users_bp)
 app.register_blueprint(books_bp)
 app.register_blueprint(borrows_bp)
+app.register_blueprint(copies_bp)
 
 @app.after_request
 def add_header(response):
