@@ -11,15 +11,6 @@ import time
 
 load_dotenv()
 
-DATABASE_USER = os.getenv("DATABASE_USER")
-DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
-DATABASE_HOST = os.getenv("DATABASE_HOST")
-DATABASE_PORT = os.getenv("DATABASE_PORT")
-DATABASE_NAME = os.getenv("DATABASE_NAME")
-
-# postgresql://user:password@host:port/dbname
-# DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
-# Instead of localhost
 DATABASE_URL = "postgresql://postgres:postgres@db:5432/mydb"
 
 for i in range(10):
