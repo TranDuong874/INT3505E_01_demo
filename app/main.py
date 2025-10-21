@@ -10,6 +10,8 @@ from routes.borrows import borrows_bp
 from routes.copies import copies_bp
 Base.metadata.create_all(bind=engine)
 
+from functools import wraps
+
 app = Flask(__name__)
 
 app.register_blueprint(users_bp)

@@ -3,10 +3,12 @@ from flask import jsonify, request, Blueprint, make_response
 from database import Book, User, LocalSession, BookCopy, Borrow
 from sqlalchemy.orm import joinedload
 import datetime
+from middleware.require_token import require_token
 
 borrows_bp = Blueprint('borrows', __name__, url_prefix='/borrows')
 # borrow records
 @borrows_bp.route('/', methods=['POST'])
+@require_token
 def borrow_book():
     data = request.get_json()
     user_id = data.get('user_id')
@@ -71,6 +73,7 @@ def borrow_book():
 # Return book
 # Return book by updating borrow record
 @borrows_bp.route('/<borrow_id>', methods=['PATCH'])
+@require_token
 def return_book(borrow_id):
     session = LocalSession()
     try:
@@ -110,6 +113,7 @@ def return_book(borrow_id):
         session.close()
 
 @borrows_bp.route('/', methods=['GET'])
+@require_token
 def get_all_borrows():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
