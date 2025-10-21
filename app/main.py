@@ -3,9 +3,9 @@ from markupsafe import escape
 from database import Base, engine, User, LocalSession, Book, BookCopy, Borrow
 import json
 import datetime
-from sqlalchemy.orm import joinedload
 from routes.books import books_bp
-from routes.users import users_bp
+from routes.users.users_v1 import users_bp_v1
+from routes.users.users_v2 import users_bp_v2
 from routes.borrows import borrows_bp
 from routes.copies import copies_bp
 Base.metadata.create_all(bind=engine)
@@ -14,7 +14,8 @@ from functools import wraps
 
 app = Flask(__name__)
 
-app.register_blueprint(users_bp)
+app.register_blueprint(users_bp_v1)
+app.register_blueprint(users_bp_v2)
 app.register_blueprint(books_bp)
 app.register_blueprint(borrows_bp)
 app.register_blueprint(copies_bp)
