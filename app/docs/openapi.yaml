@@ -1,208 +1,87 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  title: Library Management API
-  description: API for managing books, users, and borrowing records in a simple library system.
+  title: Library API
+  description: A RESTful API for managing books, copies, and user borrowing records in a library system.
   version: 1.0.0
 servers:
   - url: /
-    description: Base URL for the API
-tags:
-  - name: books
-    description: Operations related to library books and their copies.
-  - name: users
-    description: Operations related to library users.
-  - name: borrows
-    description: Operations related to book borrowing and returning.
+    description: Base URL
+security:
+  - SecurityToken: []
 
 paths:
-  /users:
-    get:
-      tags:
-        - users
-      summary: Get a list of all users
-      operationId: getAllUsers
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 1
-          description: Page number for pagination.
-        - in: query
-          name: per_page
-          schema:
-            type: integer
-            default: 10
-          description: Number of users per page.
-      responses:
-        '200':
-          description: A paginated list of users.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserListResponse'
-        '404':
-          description: Resource not found or other client error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+  /books:
     post:
       tags:
-        - users
-      summary: Create a new user
-      operationId: createUser
+        - Books
+      summary: Add a new book to the catalog
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - username
-              properties:
-                username:
-                  type: string
-                  description: The user's chosen username.
-                  example: 'jane_doe_reader'
-      responses:
-        '201':
-          description: User created successfully.
-          headers:
-            Location:
-              schema:
-                type: string
-                description: URL of the newly created user resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserResponse'
-        '400':
-          description: Invalid input or missing username.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /users/{user_id}:
-    get:
-      tags:
-        - users
-      summary: Get a user's details and their borrowing history
-      operationId: getUserById
-      parameters:
-        - in: path
-          name: user_id
-          schema:
-            type: integer
-          required: true
-          description: The ID of the user to retrieve.
-      responses:
-        '200':
-          description: User details and a list of all their borrow/return records.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserDetailResponse'
-        '404':
-          description: User not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '400':
-          description: Invalid request.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /books/:
-    get:
-      tags:
-        - books
-      summary: Get a paginated list of all books
-      operationId: getAllBooks
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 1
-          description: Page number for pagination.
-        - in: query
-          name: per_page
-          schema:
-            type: integer
-            default: 50
-          description: Number of books per page.
-      responses:
-        '200':
-          description: A paginated list of books with copy counts.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BookListResponse'
-        '400':
-          description: Invalid query parameters.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    post:
-      tags:
-        - books
-      summary: Add a new book to the library catalog
-      operationId: addBook
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - isbn
               properties:
                 isbn:
                   type: string
-                  description: The book's ISBN (International Standard Book Number).
+                  description: The ISBN of the book (required).
                   example: '978-0321765723'
                 book_name:
                   type: string
                   description: The title of the book.
                   default: unknown
-                  example: 'The Great Novel'
                 author:
                   type: string
                   description: The author of the book.
                   default: unknown
-                  example: 'A. N. Author'
+              required:
+                - isbn
       responses:
         '201':
-          description: Book added successfully.
+          description: Book successfully created.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BookResponse'
+                $ref: '#/components/schemas/BookCreatedResponse'
         '400':
-          description: Missing required field (ISBN) or invalid data.
+          description: Invalid input (e.g., missing ISBN).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
         '409':
           description: Book with this ISBN already exists.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseWithLinks'
+                $ref: '#/components/schemas/BookConflictResponse'
+
+    get:
+      tags:
+        - Books
+      summary: Get a paginated list of all books
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Books'
+      responses:
+        '200':
+          description: A list of books with total and available copies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookListResponse'
+        '400':
+          description: Invalid pagination parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /books/search:
     get:
       tags:
-        - books
-      summary: Search for books by title, author, or ISBN
-      operationId: searchBooks
+        - Books
+      summary: Search for books by name, author, or ISBN
       parameters:
         - in: query
           name: q
@@ -215,46 +94,35 @@ paths:
             type: string
             enum: [all, name, author, isbn]
             default: all
-          description: Field to search by.
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 1
-          description: Page number for pagination.
-        - in: query
-          name: per_page
-          schema:
-            type: integer
-            default: 10
-          description: Number of results per page.
+          description: The field to search within. 'all' searches all fields.
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Search'
       responses:
         '200':
-          description: A paginated list of search results.
+          description: A list of matching books with pagination and search context.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BookSearchResponse'
         '400':
-          description: Invalid query parameters.
+          description: Invalid search or pagination parameters.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
+                $ref: '#/components/schemas/Error'
+
   /books/{isbn}/copies:
+    parameters:
+      - in: path
+        name: isbn
+        schema:
+          type: string
+        required: true
+        description: The ISBN of the book.
     post:
       tags:
-        - books
-      summary: Add one or more copies of an existing book
-      operationId: addBookCopies
-      parameters:
-        - in: path
-          name: isbn
-          schema:
-            type: string
-          required: true
-          description: The ISBN of the book to add copies for.
+        - Copies
+      summary: Add multiple copies of an existing book
       requestBody:
         required: true
         content:
@@ -264,96 +132,85 @@ paths:
               properties:
                 count:
                   type: integer
-                  description: The number of copies to add. Defaults to 1.
+                  format: int32
                   minimum: 1
-                  example: 5
+                  default: 1
+                  description: The number of copies to add.
       responses:
         '201':
-          description: Copies added successfully.
+          description: Copies successfully added.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BookCopiesResponse'
-        '400':
-          description: Invalid input.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/CopiesAddedResponse'
         '404':
-          description: Book with the specified ISBN not found.
+          description: Book not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Invalid input or database error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
     get:
       tags:
-        - books
+        - Copies
       summary: Get a paginated list of all copies for a specific book
-      operationId: getCopiesByBookISBN
       parameters:
-        - in: path
-          name: isbn
-          schema:
-            type: string
-          required: true
-          description: The ISBN of the book.
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 1
-          description: Page number for pagination.
-        - in: query
-          name: per_page
-          schema:
-            type: integer
-            default: 50
-          description: Number of copies per page.
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Copies'
       responses:
         '200':
-          description: A paginated list of the book's copies.
+          description: A paginated list of book copies.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BookCopyListResponse'
+                $ref: '#/components/schemas/BookCopiesListResponse'
         '404':
-          description: Book with the specified ISBN not found.
+          description: Book not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
         '500':
-          description: Server error.
+          description: Internal server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
 
+# --- NEW BORROWS ENDPOINTS ---
   /borrows:
     post:
       tags:
-        - borrows
-      summary: Record a new book borrowing (checkout)
-      operationId: borrowBook
+        - Borrows
+      summary: Create a new borrow record (Borrow a book copy)
+      security:
+        - SecurityToken: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - user_id
-                - copy_id
               properties:
                 user_id:
                   type: integer
+                  format: int32
                   description: The ID of the user borrowing the book.
-                  example: 1
+                  example: 101
                 copy_id:
                   type: integer
+                  format: int32
                   description: The ID of the specific book copy being borrowed.
-                  example: 101
+                  example: 5
+              required:
+                - user_id
+                - copy_id
       responses:
         '201':
           description: Book successfully borrowed.
@@ -361,168 +218,405 @@ paths:
             Location:
               schema:
                 type: string
-                description: URL of the newly created borrow record.
+                example: /borrows/123
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BorrowResponse'
+                $ref: '#/components/schemas/BorrowCreatedResponse'
         '400':
-          description: Missing parameters or book copy already borrowed.
+          description: Invalid input (e.g., missing ID, copy already borrowed).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
         '404':
           description: Book copy not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
     get:
       tags:
-        - borrows
-      summary: Get a list of all borrowing records
-      operationId: getAllBorrows
+        - Borrows
+      summary: Get a paginated list of all borrow records
+      security:
+        - SecurityToken: []
       parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 1
-          description: Page number for pagination.
-        - in: query
-          name: per_page
-          schema:
-            type: integer
-            default: 50
-          description: Number of records per page.
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Books'
       responses:
         '200':
-          description: A paginated list of borrow records.
+          description: A paginated list of all borrow records.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BorrowListRecord'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Invalid pagination parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /borrows/{borrow_id}:
+    parameters:
+      - in: path
+        name: borrow_id
+        schema:
+          type: integer
+          format: int32
+        required: true
+        description: The ID of the borrow record to update.
+    patch:
+      tags:
+        - Borrows
+      summary: Return a book copy (Completes the borrow record)
+      security:
+        - SecurityToken: []
+      requestBody:
+        # PATCH usually implies optional body, but the logic forces the return action.
+        # We can document it as having an empty body or a token to signify the action.
+        description: No body required, the PATCH method alone signifies the return action.
+        required: false
+      responses:
+        '200':
+          description: Book successfully returned and borrow record updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowReturnedResponse'
+        '400':
+          description: Book already returned or other error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Borrow record or associated book copy not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# --- END OF NEW BORROWS ENDPOINTS ---
+
+  /api/v1/users:
+    post:
+      tags:
+        - Users (v1)
+      summary: Create a new user (Token Required)
+      security:
+        - SecurityToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The desired username.
+              required:
+                - username
+      responses:
+        '201':
+          description: User successfully created.
+          headers:
+            Location:
+              schema:
+                type: string
+                example: /users/1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid input (e.g., missing username) or database error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      tags:
+        - Users (v1)
+      summary: Get a paginated list of all users (Token Required)
+      security:
+        - SecurityToken: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Users'
+      responses:
+        '200':
+          description: A paginated list of users.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/users/{user_id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags:
+        - Users (v1)
+      summary: Get user details by ID (Token Required)
+      security:
+        - SecurityToken: []
+      responses:
+        '200':
+          description: User details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/users/{user_id}/borrows:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags:
+        - Users (v1)
+      summary: Get a paginated list of a user's borrow history (Token Required)
+      security:
+        - SecurityToken: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Users'
+      responses:
+        '200':
+          description: Paginated borrow records.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BorrowListResponse'
-        '400':
-          description: Invalid query parameters.
+        '404':
+          description: User not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  /borrows/{borrow_id}:
-    patch:
+  /api/v2/users:
+    get:
       tags:
-        - borrows
-      summary: Record the return of a book (update borrow record)
-      operationId: returnBook
+        - Users (v2)
+      summary: Get a paginated list of all users (v2, includes extra info) (Token Required)
+      security:
+        - SecurityToken: []
       parameters:
-        - in: path
-          name: borrow_id
-          schema:
-            type: integer
-          required: true
-          description: The ID of the active borrow record to mark as returned.
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Users'
       responses:
         '200':
-          description: Book successfully returned.
+          description: A paginated list of users with v2 schema.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BorrowReturnResponse'
-        '400':
-          description: Book already returned or invalid request.
+                $ref: '#/components/schemas/UserListResponseV2'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v2/users/{user_id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags:
+        - Users (v2)
+      summary: Get user details by ID (v2, uses common v1 response) (Token Required)
+      security:
+        - SecurityToken: []
+      responses:
+        '200':
+          description: User details.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/UserResponse'
         '404':
-          description: Borrow record or book copy not found.
+          description: User not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v2/users/{user_id}/borrows:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags:
+        - Users (v2)
+      summary: Get a paginated list of a user's borrow history (v2, uses common v1 response) (Token Required)
+      security:
+        - SecurityToken: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Users'
+      responses:
+        '200':
+          description: Paginated borrow records.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowListResponse'
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
 components:
   schemas:
-    # --- General Schemas ---
-    Link:
-      type: object
-      additionalProperties:
-        type: string
-        format: url
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-          description: A human-readable error message.
-          example: 'ISBN is required'
-    ErrorResponseWithLinks:
-      allOf:
-        - $ref: '#/components/schemas/ErrorResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: '#/components/schemas/Link'
     Pagination:
       type: object
       properties:
         page:
           type: integer
-          description: The current page number.
+          description: Current page number.
         per_page:
           type: integer
           description: Items per page.
         total:
           type: integer
-          description: Total number of items across all pages.
+          description: Total number of items (books, users, or borrows).
         pages:
           type: integer
           description: Total number of pages.
 
-    # --- Book Schemas ---
-    Book:
+    Link:
+      type: object
+      properties:
+        self:
+          type: string
+          format: uri
+        next:
+          type: string
+          format: uri
+        prev:
+          type: string
+          format: uri
+        first:
+          type: string
+          format: uri
+        last:
+          type: string
+          format: uri
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: A brief error message.
+        message:
+          type: string
+          description: Optional detailed error message.
+        status:
+          type: integer
+          description: Optional HTTP status code.
+
+    # Book Schemas (Retained for completeness)
+    BookListEntry:
       type: object
       properties:
         isbn:
           type: string
-          description: The book's ISBN.
         book_name:
           type: string
         author:
           type: string
-        type:
+        total_copies:
+          type: integer
+          format: int32
+        available_copies:
+          type: integer
+          format: int32
+    
+    BookConflictResponse:
+      type: object
+      properties:
+        error:
           type: string
-          example: book
-    BookWithCopiesSummary:
-      allOf:
-        - $ref: '#/components/schemas/Book'
-        - type: object
+          example: 'Book with ISBN 978-0321765723 already exists'
+        _links:
+          type: object
           properties:
-            total_copies:
-              type: integer
-              description: Total number of copies of this book in the library.
-            available_copies:
-              type: integer
-              description: Number of copies currently not borrowed.
+            self:
+              type: string
+              format: uri
+            add_copies:
+              type: string
+              format: uri
 
-    BookResponse:
+    BookCreatedResponse:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/Book'
+          type: object
+          properties:
+            isbn:
+              type: string
+            book_name:
+              type: string
+            author:
+              type: string
+            type:
+              type: string
+              enum: [book]
         _links:
-          $ref: '#/components/schemas/Link'
+          type: object
+          properties:
+            self:
+              type: string
+              format: uri
+            add_copies:
+              type: string
+              format: uri
+
     BookListResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/BookWithCopiesSummary'
+            $ref: '#/components/schemas/BookListEntry'
         pagination:
           $ref: '#/components/schemas/Pagination'
+
     BookSearchResponse:
       allOf:
         - $ref: '#/components/schemas/BookListResponse'
@@ -535,20 +629,24 @@ components:
                   type: string
                 search_by:
                   type: string
-                  enum: [all, name, author, isbn]
     
-    # --- Book Copy Schemas ---
-    BookCopyItem:
+    # Copy Schemas (Retained for completeness)
+    AddedCopy:
       type: object
       properties:
         id:
           type: integer
-          description: Unique ID for the specific book copy.
+          format: int32
         is_borrowed:
           type: boolean
         _links:
-          $ref: '#/components/schemas/Link'
-    BookCopiesResponse:
+          type: object
+          properties:
+            self:
+              type: string
+              format: uri
+
+    CopiesAddedResponse:
       type: object
       properties:
         data:
@@ -561,15 +659,36 @@ components:
             added_copies:
               type: array
               items:
-                $ref: '#/components/schemas/BookCopyItem'
+                $ref: '#/components/schemas/AddedCopy'
             count:
               type: integer
+              format: int32
             type:
               type: string
-              example: book_copies
+              enum: [book_copies]
         _links:
-          $ref: '#/components/schemas/Link'
-    BookCopyListResponse:
+          type: object
+          properties:
+            book:
+              type: string
+              format: uri
+
+    BookCopyDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        is_borrowed:
+          type: boolean
+        _links:
+          type: object
+          properties:
+            copy:
+              type: string
+              format: uri
+
+    BookCopiesListResponse:
       type: object
       properties:
         data:
@@ -583,11 +702,15 @@ components:
                 title:
                   type: string
                 _links:
-                  $ref: '#/components/schemas/Link'
+                  type: object
+                  properties:
+                    self:
+                      type: string
+                      format: uri
             copies_list:
               type: array
               items:
-                $ref: '#/components/schemas/BookCopyItem'
+                $ref: '#/components/schemas/BookCopyDetails'
             pagination:
               type: object
               properties:
@@ -601,123 +724,265 @@ components:
                   type: integer
         _links:
           $ref: '#/components/schemas/Link'
+          
+    # --- NEW BORROW SCHEMAS ---
+    BorrowCreatedResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int32
+              description: The ID of the new borrow record.
+            user_id:
+              type: integer
+              format: int32
+            copy_id:
+              type: integer
+              format: int32
+            start_date:
+              type: string
+              format: date
+            type:
+              type: string
+              enum: [borrow]
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+              format: uri
+            user:
+              type: string
+              format: uri
 
-    # --- User Schemas ---
-    UserItem:
+    BorrowReturnedResponse:
       type: object
       properties:
         id:
           type: integer
-        username:
-          type: string
-    UserResponse:
-      type: object
-      properties:
-        data:
-          allOf:
-            - $ref: '#/components/schemas/UserItem'
-            - type: object
-              properties:
-                type:
-                  type: string
-                  example: user
-        _links:
-          $ref: '#/components/schemas/Link'
-    UserListResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserItem'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
-    UserBorrowHistoryItem:
-      type: object
-      properties:
+          format: int32
+        user_id:
+          type: integer
+          format: int32
         copy_id:
           type: integer
-        isbn:
-          type: string
-        book_name:
-          type: string
-        author:
-          type: string
-        is_borrowed:
-          type: boolean
-          description: True if the book is currently borrowed (end_date is null).
+          format: int32
         start_date:
           type: string
           format: date
         end_date:
           type: string
           format: date
-          nullable: true
-    UserDetailResponse:
-      type: object
-      properties:
-        user_id:
+        borrowed_length:
           type: integer
-        username:
-          type: string
-        borrowed_books:
-          type: array
-          description: A list of all borrow records associated with this user (past and current).
-          items:
-            $ref: '#/components/schemas/UserBorrowHistoryItem'
+          format: int32
+          description: Length of the borrow period in days.
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+              format: uri
+            user:
+              type: string
+              format: uri
 
-    # --- Borrow Schemas ---
-    BorrowBase:
+    BorrowListRecord:
       type: object
       properties:
         id:
           type: integer
+          format: int32
         user_id:
           type: integer
+          format: int32
         copy_id:
           type: integer
+          format: int32
         start_date:
           type: string
           format: date
-    BorrowItem:
-      allOf:
-        - $ref: '#/components/schemas/BorrowBase'
-        - type: object
-          properties:
-            end_date:
-              type: string
-              format: date
-              nullable: true
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
 
-    BorrowResponse:
+    # User Schemas (Retained for completeness)
+    UserResponse:
       type: object
       properties:
         data:
-          allOf:
-            - $ref: '#/components/schemas/BorrowBase'
-            - type: object
-              properties:
-                type:
-                  type: string
-                  example: borrow
+          type: object
+          properties:
+            user_id:
+              type: integer
+              format: int32
+            username:
+              type: string
+            type:
+              type: string
+              enum: [user]
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+              format: uri
+            borrows:
+              type: string
+              format: uri
+
+    UserListItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        username:
+          type: string
+
+    UserListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserListItem'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
         _links:
           $ref: '#/components/schemas/Link'
-    BorrowReturnResponse:
+
+    UserListResponseV2:
       allOf:
-        - $ref: '#/components/schemas/BorrowItem'
+        - $ref: '#/components/schemas/UserListResponse'
         - type: object
           properties:
-            borrowed_length:
-              type: integer
-              description: The number of days the book was borrowed.
-            _links:
-              $ref: '#/components/schemas/Link'
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int32
+                  username:
+                    type: string
+                  extra_info:
+                    type: string
+                    enum: [v2]
+                    description: Extra field added in v2.
+
+    # Borrow Schemas for /users/{id}/borrows (Retained for completeness)
+    BorrowRecord:
+      type: object
+      properties:
+        borrow_id:
+          type: integer
+          format: int32
+        copy_id:
+          type: integer
+          format: int32
+        isbn:
+          type: string
+        book_name:
+          type: string
+          nullable: true
+        start_date:
+          type: string
+          format: date-time
+          nullable: true
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+
     BorrowListResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/BorrowItem'
+            $ref: '#/components/schemas/BorrowRecord'
         pagination:
           $ref: '#/components/schemas/Pagination'
+        _links:
+          $ref: '#/components/schemas/Link'
+
+  parameters:
+    Page:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: The page number for pagination.
+    
+    PerPage_Books:
+      in: query
+      name: per_page
+      schema:
+        type: integer
+        minimum: 1
+        default: 50
+      description: Number of books or general items per page.
+    
+    PerPage_Search:
+      in: query
+      name: per_page
+      schema:
+        type: integer
+        minimum: 1
+        default: 10
+      description: Number of search results per page.
+
+    PerPage_Copies:
+      in: query
+      name: per_page
+      schema:
+        type: integer
+        minimum: 1
+        default: 50
+      description: Number of book copies per page.
+    
+    PerPage_Users:
+      in: query
+      name: per_page
+      schema:
+        type: integer
+        minimum: 1
+        default: 10
+      description: Number of users/borrows per page.
+
+    UserId:
+      in: path
+      name: user_id
+      schema:
+        type: integer
+        format: int32
+      required: true
+      description: The unique ID of the user.
+
+  securitySchemes:
+    SecurityToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "Bearer token format: `Bearer <token>`"
+
+  responses:
+    Unauthorized:
+      description: Authentication is required or token is invalid.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'Token missing or invalid'
