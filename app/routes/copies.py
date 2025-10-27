@@ -1,5 +1,5 @@
-from flask import jsonify, request, Blueprint, make_response
-from database import Book, User, LocalSession, BookCopy
+from flask import Blueprint, request, jsonify
+from database import LocalSession, Book, BookCopy
 from sqlalchemy.orm import joinedload
 
 copies_bp = Blueprint('copies', __name__, url_prefix='/books')
@@ -10,7 +10,6 @@ def add_book_copies(isbn):
     count = max(data.get('count', 1), 1)
 
     session = LocalSession()
-
     try:
         book = session.query(Book).filter_by(isbn=isbn).first()
         if not book:
@@ -23,28 +22,28 @@ def add_book_copies(isbn):
             book_copies.append(copy)
 
         session.commit()
+        for copy in book_copies:
+            session.refresh(copy)
 
-        return jsonify({
+        response = {
             "data": {
                 "isbn": book.isbn,
                 "book_name": book.book_name,
                 "added_copies": [
                     {
                         "id": copy.id,
-                        "_links": {
-                            "self": f"/copies/{copy.id}/",
-                        },
-                        "is_borrowed" : copy.is_borrowed
+                        "is_borrowed": copy.is_borrowed
                     } for copy in book_copies
                 ],
                 "count": len(book_copies),
                 "type": "book_copies"
             },
             "_links": {
-                "book": f"/books/{isbn}",
+                "self": f"/books/{isbn}",
+                "copies": f"/books/{isbn}/copies"
             }
-        }), 201
-
+        }
+        return jsonify(response), 201
     except Exception as e:
         session.rollback()
         return jsonify({"error": str(e)}), 400
@@ -53,12 +52,11 @@ def add_book_copies(isbn):
 
 @copies_bp.route('/<isbn>/copies', methods=['GET'])
 def get_list_of_copies_by_book(isbn):
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    offset = (page - 1) * per_page
     session = LocalSession()
     try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 50, type=int)
-        offset = (page - 1) * per_page
-
         book = session.query(Book).filter(Book.isbn == isbn).options(joinedload(Book.copies)).first()
         
         if book is None:
@@ -66,53 +64,42 @@ def get_list_of_copies_by_book(isbn):
                 "error": "Not Found",
                 "message": f"Book with ISBN '{isbn}' was not found."
             }), 404
-        else:
-            # Manually paginate the fully loaded list of copies in Python
-            all_copies = book.copies
-            total_copies = len(all_copies)
-            copies_list = all_copies[offset:offset + per_page]
-            total_pages = (total_copies + per_page - 1) // per_page
 
-            # Pagination links
-            base_url = f"/books/{isbn}/copies"
-            links = {
-                "self": f"{base_url}?page={page}&per_page={per_page}",
-                "first": f"{base_url}?page=1&per_page={per_page}",
-                "last": f"{base_url}?page={total_pages}&per_page={per_page}"
+        all_copies = book.copies
+        total_copies = len(all_copies)
+        copies_list = all_copies[offset:offset + per_page]
+        total_pages = (total_copies + per_page - 1) // per_page
+        next_page = page + 1 if page < total_pages else total_pages
+        prev_page = page - 1 if page > 1 else 1
+
+        result = {
+            "data": {
+                "isbn": book.isbn,
+                "book_name": book.book_name,
+                "author": book.author,
+                "copies": [
+                    {
+                        "id": copy.id,
+                        "is_borrowed": copy.is_borrowed
+                    } for copy in copies_list
+                ]
+            },
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total_copies,
+                "pages": total_pages
+            },
+            "_links": {
+                "self": {"href": f"/books/{isbn}/copies?page={page}&per_page={per_page}"},
+                "first": {"href": f"/books/{isbn}/copies?page=1&per_page={per_page}"},
+                "prev": {"href": f"/books/{isbn}/copies?page={prev_page}&per_page={per_page}"},
+                "next": {"href": f"/books/{isbn}/copies?page={next_page}&per_page={per_page}"},
+                "last": {"href": f"/books/{isbn}/copies?page={total_pages}&per_page={per_page}"}
             }
-
-            if page < total_pages:
-                links["next"] = f"{base_url}?page={page + 1}&per_page={per_page}"
-            if page > 1:
-                links["prev"] = f"{base_url}?page={page - 1}&per_page={per_page}"
-            
-            return jsonify({
-                "data" : {
-                    "book" : { 
-                        'isbn' : book.isbn,
-                        'title' : book.title,
-                        "_links": {"self": f"/books/{book.isbn}"}
-                    },
-                    "copies_list" : [
-                        {
-                            "id" : copy.id,
-                            "is_borrowed" : copy.is_borrowed,
-                            "_links" : {
-                                "copy" : f"/copies/{copy.id}"
-                            }
-                        } for copy in copies_list
-                    ],
-                    "pagination": {
-                        "page": page,
-                        "per_page": per_page,
-                        "total_items": total_copies,
-                        "total_pages": total_pages
-                    }
-                },
-                "_links": links 
-            }), 200
-        
+        }
+        return jsonify(result), 200
     except Exception as e:
-        return jsonify({'error' : str(e)}), 500 
+        return jsonify({"error": str(e)}), 500
     finally:
         session.close()

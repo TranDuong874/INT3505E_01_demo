@@ -1,12 +1,9 @@
-
-from flask import jsonify, request, Blueprint, make_response
-from database import Book, User, LocalSession, BookCopy, Borrow
-from sqlalchemy.orm import joinedload
-import datetime
+from flask import Blueprint, request, jsonify
+from database import LocalSession, Borrow, BookCopy, Book, User
 from middleware.require_token import require_token
+import datetime
 
 borrows_bp = Blueprint('borrows', __name__, url_prefix='/borrows')
-# borrow records
 @borrows_bp.route('/', methods=['POST'])
 @require_token
 def borrow_book():
@@ -24,26 +21,21 @@ def borrow_book():
     try:
         book_copy = session.query(BookCopy).filter_by(id=copy_id).first()
         if not book_copy:
-            return jsonify({
-                "error": "Book copy not found"
-            }), 404
+            return jsonify({"error": "Book copy not found"}), 404
         if book_copy.is_borrowed:
-            return jsonify({
-                "error": "Book copy already borrowed"
-            }, 400)
+            return jsonify({"error": "Book copy already borrowed"}), 400
 
         new_borrow = Borrow(
-            user_id = user_id,
-            isbn = book_copy.isbn,
-            copy_id = copy_id,
+            user_id=user_id,
+            isbn=book_copy.isbn,
+            copy_id=copy_id,
             start_date=start_date,
             end_date=None
         )
         session.add(new_borrow)
-
         book_copy.is_borrowed = True
-
         session.commit()
+        session.refresh(new_borrow)
 
         response = {
             "data": {
@@ -58,20 +50,13 @@ def borrow_book():
                 "user": f"/users/{user_id}",
             }
         }
-        return jsonify(response), 201, {
-            'Location': f"/borrows/{new_borrow.id}"
-        }
-
+        return jsonify(response), 201, {'Location': f"/borrows/{new_borrow.id}"}
     except Exception as e:
         session.rollback()
-        return jsonify({
-            "error": str(e)
-        }), 400
+        return jsonify({"error": str(e)}), 400
     finally:
         session.close()
 
-# Return book
-# Return book by updating borrow record
 @borrows_bp.route('/<borrow_id>', methods=['PATCH'])
 @require_token
 def return_book(borrow_id):
@@ -90,22 +75,24 @@ def return_book(borrow_id):
 
         book_copy.is_borrowed = False
         borrow_record.end_date = datetime.date.today()
-
         session.commit()
-        return jsonify({
-            "id": borrow_record.id,
-            "user_id": borrow_record.user_id,
-            "copy_id": borrow_record.copy_id,
-            "start_date": borrow_record.start_date.isoformat(),
-            "end_date": borrow_record.end_date.isoformat(),
-            "borrowed_length": (borrow_record.end_date - borrow_record.start_date).days,
+
+        response = {
+            "data": {
+                "id": borrow_record.id,
+                "user_id": borrow_record.user_id,
+                "copy_id": borrow_record.copy_id,
+                "start_date": borrow_record.start_date.isoformat(),
+                "end_date": borrow_record.end_date.isoformat(),
+                "borrowed_length": (borrow_record.end_date - borrow_record.start_date).days,
+                "type": "borrow"
+            },
             "_links": {
                 "self": f"/borrows/{borrow_record.id}",
                 "user": f"/users/{borrow_record.user_id}",
-                # "book_copy": f"/books/{book_copy.isbn}/copies/{borrow_record.copy_id}"
             }
-        }), 200
-
+        }
+        return jsonify(response), 200
     except Exception as e:
         session.rollback()
         return jsonify({"error": str(e)}), 400
@@ -116,13 +103,15 @@ def return_book(borrow_id):
 @require_token
 def get_all_borrows():
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
     offset = (page - 1) * per_page
     session = LocalSession()
-
     try:
         total = session.query(Borrow).count()
         borrows = session.query(Borrow).offset(offset).limit(per_page).all()
+        total_pages = (total + per_page - 1) // per_page
+        next_page = page + 1 if page < total_pages else total_pages
+        prev_page = page - 1 if page > 1 else 1
 
         result = {
             "data": [
@@ -139,11 +128,16 @@ def get_all_borrows():
                 "page": page,
                 "per_page": per_page,
                 "total": total,
-                "pages": (total + per_page - 1) // per_page
+                "pages": total_pages
+            },
+            "_links": {
+                "self": {"href": f"/borrows?page={page}&per_page={per_page}"},
+                "first": {"href": f"/borrows?page=1&per_page={per_page}"},
+                "prev": {"href": f"/borrows?page={prev_page}&per_page={per_page}"},
+                "next": {"href": f"/borrows?page={next_page}&per_page={per_page}"},
+                "last": {"href": f"/borrows?page={total_pages}&per_page={per_page}"}
             }
         }
         return jsonify(result), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
     finally:
         session.close()
