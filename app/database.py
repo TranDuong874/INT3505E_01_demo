@@ -1,48 +1,55 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy import ForeignKey
-import datetime
-from sqlalchemy import engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, create_engine
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from dotenv import load_dotenv
+import datetime
 import os
 import time
 
 load_dotenv()
+# DATABASE_URL = "postgresql://postgres:postgres@db:5432/mydb"
+DATABASE_URL = "sqlite:///./library.db"
 
-DATABASE_URL = "postgresql://postgres:postgres@db:5432/mydb"
-
-for i in range(10):
-    try:
-        engine = engine.create_engine(DATABASE_URL)
-        engine.connect()
-        break
-    except Exception as e:
-        print("Waiting for Postgres...")
-        time.sleep(2)
+# Choose database engine dynamically
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False}  # Needed for SQLite
+    )
+else:
+    # Wait for PostgreSQL (useful when running inside Docker)
+    from sqlalchemy import engine as sa_engine
+    for i in range(10):
+        try:
+            engine = sa_engine.create_engine(DATABASE_URL)
+            engine.connect()
+            break
+        except Exception as e:
+            print("Waiting for Postgres...")
+            time.sleep(2)
 
 LocalSession = sessionmaker(bind=engine)
-
 Base = declarative_base()
 
+
+# --- MODELS ---
 class Book(Base):
     __tablename__ = "books"
     isbn = Column(String, primary_key=True)
     book_name = Column(String, nullable=False)
     author = Column(String, nullable=False)
 
-    copies = relationship("BookCopy", back_populates="book") # Points to BookCopy.book
+    copies = relationship("BookCopy", back_populates="book")
+
 
 class BookCopy(Base):
     __tablename__ = "book_copies"
     id = Column(Integer, primary_key=True, index=True)
     isbn = Column(String, ForeignKey("books.isbn"), nullable=False)
-
     is_borrowed = Column(Boolean, default=False, nullable=False)
 
-    book = relationship("Book", back_populates="copies") # Points to Book.copies
+    book = relationship("Book", back_populates="copies")
     borrows = relationship("Borrow", back_populates="copy")
+
 
 class User(Base):
     __tablename__ = "users"
@@ -51,9 +58,9 @@ class User(Base):
 
     borrows = relationship("Borrow", back_populates="user")
 
+
 class Borrow(Base):
     __tablename__ = "borrows"
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     isbn = Column(String, ForeignKey("books.isbn"), nullable=False)
@@ -64,21 +71,7 @@ class Borrow(Base):
 
     user = relationship("User", back_populates="borrows")
     copy = relationship("BookCopy", back_populates="borrows")
-    
-# Objects
-# - book
-#   + book_name
-#   + book_id (PK)
-# - book_copy:
-#   + copy_id (PK)
-#   + book_id (FK)
-#   + is_borrowed
-# - user:
-#   + user_id (PK)
-#   + user_name
-# - borrow: 
-#   + borrow_id (PK)
-#   + user_id (FK)
-#   + book_id (FK)
-#   + borrow_date
-#   + end_date
+
+
+# --- INITIALIZE DATABASE ---
+Base.metadata.create_all(bind=engine)

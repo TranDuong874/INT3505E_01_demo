@@ -9,7 +9,7 @@ users_bp_v2 = Blueprint("users_v2", __name__, url_prefix="/api/v2/users")
 @users_bp_v2.route("/", methods=["GET"])
 @require_token
 def get_all_users_v2():
-    # new logic for v2 (e.g., include extra field)
+    # new logic for v2 - include extra field
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     offset = (page - 1) * per_page
