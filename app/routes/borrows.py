@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
+from app.middleware.auth import require_scope
 from database import LocalSession, Borrow, BookCopy, Book, User
 
 import datetime
 
 borrows_bp = Blueprint('borrows', __name__, url_prefix='/borrows')
 @borrows_bp.route('/', methods=['POST'])
+@require_scope('borrows:write')
 def borrow_book():
     data = request.get_json()
     user_id = data.get('user_id')
@@ -57,6 +59,7 @@ def borrow_book():
         session.close()
 
 @borrows_bp.route('/<borrow_id>', methods=['PATCH'])
+@require_scope('borrows:write')
 def return_book(borrow_id):
     session = LocalSession()
     try:
@@ -98,6 +101,7 @@ def return_book(borrow_id):
         session.close()
 
 @borrows_bp.route('/', methods=['GET'])
+@require_scope('borrows:read')
 def get_all_borrows():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)

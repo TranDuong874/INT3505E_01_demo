@@ -1,15 +1,212 @@
 openapi: 3.0.3
 info:
   title: Library API
-  description: A RESTful API for managing books, copies, and user borrowing records in a library system.
+  description: A RESTful API for managing books, copies, and user borrowing records in a library system with OAuth2 authentication.
   version: 1.0.0
 servers:
   - url: /
-    description: Base URL
+    description: Flask API Base URL
+  - url: http://localhost:8080
+    description: Auth Service Base URL
 security:
-  - SecurityToken: []
+  - OAuth2: []
 
 paths:
+  # OAuth2 Authentication Service Endpoints
+  /oauth/token:
+    post:
+      tags:
+        - Authentication
+      summary: Get OAuth2 access token (client_credentials grant)
+      description: Obtain an access token using client credentials flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  enum: [client_credentials]
+                  description: OAuth2 grant type
+                client_id:
+                  type: string
+                  description: OAuth2 client identifier
+                  example: demo-client
+                client_secret:
+                  type: string
+                  description: OAuth2 client secret
+                  example: demo-secret
+                scope:
+                  type: string
+                  description: Requested scopes (space-separated)
+                  example: borrows:read borrows:write
+                audience:
+                  type: string
+                  description: Token audience
+                  example: flask-api
+              required:
+                - grant_type
+                - client_id
+                - client_secret
+      responses:
+        '200':
+          description: Access token successfully issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT access token
+                  token_type:
+                    type: string
+                    enum: [Bearer]
+                  expires_in:
+                    type: integer
+                    description: Token expiration time in seconds
+                  scope:
+                    type: string
+                    description: Granted scopes
+        '400':
+          description: Invalid request (unsupported grant type)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: unsupported_grant_type
+        '401':
+          description: Invalid client credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: invalid_client
+
+  /.well-known/openid-configuration:
+    get:
+      tags:
+        - Authentication
+      summary: OAuth2/OpenID Connect discovery endpoint
+      description: Returns OAuth2 service metadata
+      responses:
+        '200':
+          description: Service metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  issuer:
+                    type: string
+                    example: http://localhost:8080
+                  token_endpoint:
+                    type: string
+                    example: http://localhost:8080/oauth/token
+
+  # Proxy endpoint for accessing Flask API through auth service
+  /api/borrows:
+    get:
+      tags:
+        - Borrows (via Auth Proxy)
+      summary: Get borrows via auth service proxy
+      description: Access borrows endpoint through authentication service proxy
+      security:
+        - OAuth2: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage_Books'
+      responses:
+        '200':
+          description: A paginated list of all borrow records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BorrowListRecord'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Borrows (via Auth Proxy)
+      summary: Create borrow via auth service proxy
+      description: Create new borrow record through authentication service proxy
+      security:
+        - OAuth2: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  format: int32
+                copy_id:
+                  type: integer
+                  format: int32
+              required:
+                - user_id
+                - copy_id
+      responses:
+        '201':
+          description: Book successfully borrowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/borrows/{borrow_id}:
+    parameters:
+      - in: path
+        name: borrow_id
+        schema:
+          type: integer
+          format: int32
+        required: true
+        description: The ID of the borrow record to update
+    patch:
+      tags:
+        - Borrows (via Auth Proxy)
+      summary: Return book via auth service proxy
+      description: Return book copy through authentication service proxy
+      security:
+        - OAuth2: []
+      responses:
+        '200':
+          description: Book successfully returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowReturnedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Flask API Endpoints (direct access)
   /books:
     post:
       tags:
@@ -190,7 +387,7 @@ paths:
         - Borrows
       summary: Create a new borrow record (Borrow a book copy)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       requestBody:
         required: true
         content:
@@ -243,7 +440,7 @@ paths:
         - Borrows
       summary: Get a paginated list of all borrow records
       security:
-        - SecurityToken: []
+        - OAuth2: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Books'
@@ -284,7 +481,7 @@ paths:
         - Borrows
       summary: Return a book copy (Completes the borrow record)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       requestBody:
         # PATCH usually implies optional body, but the logic forces the return action.
         # We can document it as having an empty body or a token to signify the action.
@@ -320,7 +517,7 @@ paths:
         - Users (v1)
       summary: Create a new user (Token Required)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       requestBody:
         required: true
         content:
@@ -359,7 +556,7 @@ paths:
         - Users (v1)
       summary: Get a paginated list of all users (Token Required)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -381,7 +578,7 @@ paths:
         - Users (v1)
       summary: Get user details by ID (Token Required)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       responses:
         '200':
           description: User details.
@@ -406,7 +603,7 @@ paths:
         - Users (v1)
       summary: Get a paginated list of a user's borrow history (Token Required)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -432,7 +629,7 @@ paths:
         - Users (v2)
       summary: Get a paginated list of all users (v2, includes extra info) (Token Required)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -454,7 +651,7 @@ paths:
         - Users (v2)
       summary: Get user details by ID (v2, uses common v1 response) (Token Required)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       responses:
         '200':
           description: User details.
@@ -479,7 +676,7 @@ paths:
         - Users (v2)
       summary: Get a paginated list of a user's borrow history (v2, uses common v1 response) (Token Required)
       security:
-        - SecurityToken: []
+        - OAuth2: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -969,11 +1166,15 @@ components:
       description: The unique ID of the user.
 
   securitySchemes:
-    SecurityToken:
-      type: apiKey
-      in: header
-      name: Authorization
-      description: "Bearer token format: `Bearer <token>`"
+    OAuth2:
+      type: oauth2
+      description: OAuth2 client credentials flow
+      flows:
+        clientCredentials:
+          tokenUrl: http://localhost:8080/oauth/token
+          scopes:
+            borrows:read: Read borrow records
+            borrows:write: Create and update borrow records
 
   responses:
     Unauthorized:
@@ -985,4 +1186,18 @@ components:
             properties:
               error:
                 type: string
-                example: 'Token missing or invalid'
+                example: 'missing_or_invalid_token'
+              details:
+                type: string
+                example: 'JWT verification failed'
+
+    Forbidden:
+      description: Token is valid but lacks required scope.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'insufficient_scope'

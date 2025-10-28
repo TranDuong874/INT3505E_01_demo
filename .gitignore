@@ -4,3 +4,4 @@ __pycache__/
 .env
 venv
 dev_venv
+/auth_service/node_modules
