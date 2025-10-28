@@ -1,11 +1,10 @@
 from flask import Blueprint, request, jsonify
 from database import LocalSession, Borrow, BookCopy, Book, User
-from middleware.require_token import require_token
+
 import datetime
 
 borrows_bp = Blueprint('borrows', __name__, url_prefix='/borrows')
 @borrows_bp.route('/', methods=['POST'])
-@require_token
 def borrow_book():
     data = request.get_json()
     user_id = data.get('user_id')
@@ -58,7 +57,6 @@ def borrow_book():
         session.close()
 
 @borrows_bp.route('/<borrow_id>', methods=['PATCH'])
-@require_token
 def return_book(borrow_id):
     session = LocalSession()
     try:
@@ -100,7 +98,6 @@ def return_book(borrow_id):
         session.close()
 
 @borrows_bp.route('/', methods=['GET'])
-@require_token
 def get_all_borrows():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
