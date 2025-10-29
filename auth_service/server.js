@@ -5,6 +5,20 @@ const bcrypt = require('bcryptjs')
 const app = express()
 app.use(bodyParser.json());
 
+// CORS: reflect origin and requested headers; handle preflight
+app.use((req, res, next) => {
+    const origin = req.headers.origin || '*';
+    const reqHeaders = req.headers['access-control-request-headers'];
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', reqHeaders || 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+    next();
+});
+
 const SECRET = 'demo-secret-key';
 
 const users = [
@@ -38,7 +52,7 @@ const authenticate = (req, res) => {
     const token = jwt.sign(
         {sub: user.id.toString(), username: user.username}, // Payload
         SECRET, // Signing key
-        {expiresIn: '1h'}
+        {expiresIn: '1m'}
     );
 
     // Access token: The signed JWT token, returned by the server

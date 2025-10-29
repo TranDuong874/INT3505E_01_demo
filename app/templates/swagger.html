@@ -11,8 +11,12 @@
     <script>
     window.onload = () => {
         SwaggerUIBundle({
-        url: '/openapi.yaml',  // where Flask serves your YAML
-        dom_id: '#swagger-ui'
+            url: '/openapi.yaml',
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            displayRequestDuration: true,
+            persistAuthorization: false,
+            validatorUrl: null
         });
     };
     </script>

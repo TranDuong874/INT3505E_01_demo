@@ -6,10 +6,53 @@ info:
 servers:
   - url: /
     description: Base URL
-security:
-  - SecurityToken: []
 
 paths:
+  # Auth service (separate server on port 3000)
+  /token:
+    post:
+      tags:
+        - Auth
+      summary: Obtain a JWT access token
+      security: []
+      servers:
+        - url: http://localhost:3000
+          description: Auth service (localhost)
+        - url: http://127.0.0.1:3000
+          description: Auth service (loopback)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: Bearer
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /books:
     post:
       tags:
@@ -60,6 +103,8 @@ paths:
       tags:
         - Books
       summary: Get a paginated list of all books
+      security:
+        - SecurityToken: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Books'
@@ -82,6 +127,7 @@ paths:
       tags:
         - Books
       summary: Search for books by name, author, or ISBN
+      # Public in current code
       parameters:
         - in: query
           name: q
@@ -123,6 +169,7 @@ paths:
       tags:
         - Copies
       summary: Add multiple copies of an existing book
+      # Public in current code
       requestBody:
         required: true
         content:
@@ -160,6 +207,7 @@ paths:
       tags:
         - Copies
       summary: Get a paginated list of all copies for a specific book
+      # Public in current code
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Copies'
@@ -189,8 +237,7 @@ paths:
       tags:
         - Borrows
       summary: Create a new borrow record (Borrow a book copy)
-      security:
-        - SecurityToken: []
+      # Public in current code
       requestBody:
         required: true
         content:
@@ -242,8 +289,7 @@ paths:
       tags:
         - Borrows
       summary: Get a paginated list of all borrow records
-      security:
-        - SecurityToken: []
+      # Public in current code
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Books'
@@ -283,8 +329,7 @@ paths:
       tags:
         - Borrows
       summary: Return a book copy (Completes the borrow record)
-      security:
-        - SecurityToken: []
+      # Public in current code
       requestBody:
         # PATCH usually implies optional body, but the logic forces the return action.
         # We can document it as having an empty body or a token to signify the action.
@@ -318,9 +363,7 @@ paths:
     post:
       tags:
         - Users (v1)
-      summary: Create a new user (Token Required)
-      security:
-        - SecurityToken: []
+      summary: Create a new user
       requestBody:
         required: true
         content:
@@ -357,9 +400,7 @@ paths:
     get:
       tags:
         - Users (v1)
-      summary: Get a paginated list of all users (Token Required)
-      security:
-        - SecurityToken: []
+      summary: Get a paginated list of all users
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -379,9 +420,7 @@ paths:
     get:
       tags:
         - Users (v1)
-      summary: Get user details by ID (Token Required)
-      security:
-        - SecurityToken: []
+      summary: Get user details by ID
       responses:
         '200':
           description: User details.
@@ -404,9 +443,7 @@ paths:
     get:
       tags:
         - Users (v1)
-      summary: Get a paginated list of a user's borrow history (Token Required)
-      security:
-        - SecurityToken: []
+      summary: Get a paginated list of a user's borrow history
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -430,9 +467,7 @@ paths:
     get:
       tags:
         - Users (v2)
-      summary: Get a paginated list of all users (v2, includes extra info) (Token Required)
-      security:
-        - SecurityToken: []
+      summary: Get a paginated list of all users (v2, includes extra info)
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -452,9 +487,7 @@ paths:
     get:
       tags:
         - Users (v2)
-      summary: Get user details by ID (v2, uses common v1 response) (Token Required)
-      security:
-        - SecurityToken: []
+      summary: Get user details by ID (v2, uses common v1 response)
       responses:
         '200':
           description: User details.
@@ -477,9 +510,7 @@ paths:
     get:
       tags:
         - Users (v2)
-      summary: Get a paginated list of a user's borrow history (v2, uses common v1 response) (Token Required)
-      security:
-        - SecurityToken: []
+      summary: Get a paginated list of a user's borrow history (v2, uses common v1 response)
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -970,10 +1001,15 @@ components:
 
   securitySchemes:
     SecurityToken:
-      type: apiKey
-      in: header
-      name: Authorization
-      description: "Bearer token format: `Bearer <token>`"
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Use HTTP Bearer auth.
+
+        - Click "Authorize".
+        - Paste the raw JWT only (do not include the word `Bearer`).
+        - Swagger UI will send `Authorization: Bearer <your-token>` automatically.
 
   responses:
     Unauthorized:
