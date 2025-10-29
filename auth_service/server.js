@@ -35,14 +35,28 @@ const users = [
         username: 'duong',
         password: 'password',
         roles: ['admin'],
-        scopes: ['read:users', 'write:users', 'read:posts', 'write:posts', 'read:books', 'write:books', 'read:borrows', 'write:borrows']
+        scopes: [
+            'books:read',
+            'books:write',
+            'borrows:read',
+            'borrows:write',
+            'users:read',
+            'users:write',
+            'posts:read',
+            'posts:write'
+        ]
     },
     {
         id: 2,
         username: 'user1',
         password: 'password',
         roles: ['user'],
-        scopes: ['read:posts', 'write:posts', 'read:books', 'read:borrows']
+        scopes: [
+            'books:read',
+            'borrows:read',
+            'posts:read',
+            'posts:write'
+        ]
     }
 ];
 

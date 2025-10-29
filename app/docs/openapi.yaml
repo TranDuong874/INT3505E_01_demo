@@ -14,6 +14,68 @@ security:
   - SecurityToken: []
 
 paths:
+  /token:
+    post:
+      tags:
+        - "Auth (Demo)"
+      summary: Demo login to obtain tokens
+      description: Authenticate with username and password to receive access and refresh tokens.
+      security: []
+      servers:
+        - url: http://localhost:3000
+          description: Demo auth server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string, example: duong }
+                password: { type: string, format: password, example: password }
+              required: [username, password]
+      responses:
+        '200':
+          description: Tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid username or password
+
+  /token/refresh:
+    post:
+      tags:
+        - "Auth (Demo)"
+      summary: Refresh access token
+      description: Exchange a valid refresh token for a new access token.
+      security: []
+      servers:
+        - url: http://localhost:3000
+          description: Demo auth server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token: { type: string }
+              required: [refresh_token]
+      responses:
+        '200':
+          description: New access token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string, enum: [Bearer] }
+                  expires_in: { type: integer }
+        '401':
+          description: Invalid or expired refresh token
   /books/:
     post:
       tags: [Books]
@@ -464,6 +526,27 @@ components:
               error: { type: string }
 
   schemas:
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        refresh_token:
+          type: string
+          description: JWT refresh token
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Access token lifetime in seconds
+        scope:
+          type: string
+          description: Space-separated scopes (e.g., "books:read borrows:write")
+        roles:
+          type: array
+          items: { type: string }
     Pagination:
       type: object
       properties:
