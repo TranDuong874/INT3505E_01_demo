@@ -3,10 +3,11 @@ from flask import Blueprint, request, jsonify
 
 from database import LocalSession, User
 from .users_common import get_user_info_by_id, get_user_borrows
-
+from middleware.auth import require_auth, require_role, require_scope
 users_bp_v1 = Blueprint("users_v1", __name__, url_prefix="/api/v1/users")
 
 @users_bp_v1.route("/", methods=["POST"])
+@require_scope('users:write')
 def create_user():
     data = request.get_json()
     username = data.get("username")
@@ -38,6 +39,7 @@ def create_user():
         session.close()
 
 @users_bp_v1.route("/", methods=["GET"])
+@require_scope('users:read')
 def get_all_users():
     # original v1 logic
     page = request.args.get('page', 1, type=int)
@@ -66,10 +68,12 @@ def get_all_users():
         session.close()
 
 @users_bp_v1.route("/<user_id>", methods=["GET"])
+@require_scope('users:read')
 def get_user_by_id(user_id):
     return get_user_info_by_id(user_id)
 
 @users_bp_v1.route("/<user_id>/borrows", methods=["GET"])
+@require_scope('users:read')
 def get_user_borrows(user_id):
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)

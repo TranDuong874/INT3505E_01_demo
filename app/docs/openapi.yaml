@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Library API
-  description: A RESTful API for managing books, copies, and user borrowing records in a library system with OAuth2 authentication.
-  version: 1.0.0
+  description: A RESTful API for managing books, copies, and user borrowing records in a library system with OAuth2 authentication, refresh tokens, roles, and scopes.
+  version: 2.0.0
 servers:
   - url: /
     description: Flask API Base URL
@@ -113,15 +113,163 @@ paths:
                     type: string
                     example: http://localhost:8080/oauth/token
 
+  # Auth service endpoints (port 3000)
+  /token:
+    post:
+      tags:
+        - Auth
+      summary: Obtain JWT access and refresh tokens
+      description: Authenticate with username and password to receive access token, refresh token, and user information including roles and scopes
+      security: []
+      servers:
+        - url: http://localhost:3000
+          description: Auth service (localhost)
+        - url: http://127.0.0.1:3000
+          description: Auth service (loopback)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: duong
+                password:
+                  type: string
+                  format: password
+                  example: password
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Tokens successfully issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /token/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      description: Use a valid refresh token to obtain a new access token
+      security: []
+      servers:
+        - url: http://localhost:3000
+          description: Auth service (localhost)
+        - url: http://127.0.0.1:3000
+          description: Auth service (loopback)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: The refresh token obtained from /token endpoint
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+              required:
+                - refresh_token
+      responses:
+        '200':
+          description: New access token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: New JWT access token
+                  token_type:
+                    type: string
+                    enum: [Bearer]
+                  expires_in:
+                    type: integer
+                    description: Token expiration time in seconds
+                    example: 900
+        '400':
+          description: Missing refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid or expired refresh token
+                  details:
+                    type: string
+
+  /token/revoke:
+    post:
+      tags:
+        - Auth
+      summary: Revoke refresh token
+      description: Invalidate a refresh token to prevent further use
+      security: []
+      servers:
+        - url: http://localhost:3000
+          description: Auth service (localhost)
+        - url: http://127.0.0.1:3000
+          description: Auth service (loopback)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: The refresh token to revoke
+              required:
+                - refresh_token
+      responses:
+        '200':
+          description: Token successfully revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token revoked successfully
+        '400':
+          description: Invalid token or missing refresh_token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   # Proxy endpoint for accessing Flask API through auth service
   /api/borrows:
     get:
       tags:
         - Borrows (via Auth Proxy)
       summary: Get borrows via auth service proxy
-      description: Access borrows endpoint through authentication service proxy
+      description: Access borrows endpoint through authentication service proxy (requires read:borrows scope)
       security:
-        - OAuth2: []
+        - BearerAuth: [read:borrows]
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Books'
@@ -148,9 +296,9 @@ paths:
       tags:
         - Borrows (via Auth Proxy)
       summary: Create borrow via auth service proxy
-      description: Create new borrow record through authentication service proxy
+      description: Create new borrow record through authentication service proxy (requires write:borrows scope)
       security:
-        - OAuth2: []
+        - BearerAuth: [write:borrows]
       requestBody:
         required: true
         content:
@@ -192,9 +340,9 @@ paths:
       tags:
         - Borrows (via Auth Proxy)
       summary: Return book via auth service proxy
-      description: Return book copy through authentication service proxy
+      description: Return book copy through authentication service proxy (requires write:borrows scope)
       security:
-        - OAuth2: []
+        - BearerAuth: [write:borrows]
       responses:
         '200':
           description: Book successfully returned
@@ -208,56 +356,14 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
   # Flask API Endpoints (direct access)
-  # Auth service (separate server on port 3000)
-  /token:
-    post:
-      tags:
-        - Auth
-      summary: Obtain a JWT access token
-      security: []
-      servers:
-        - url: http://localhost:3000
-          description: Auth service (localhost)
-        - url: http://127.0.0.1:3000
-          description: Auth service (loopback)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                password:
-                  type: string
-              required:
-                - username
-                - password
-      responses:
-        '200':
-          description: Token issued
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access_token:
-                    type: string
-                  token_type:
-                    type: string
-                    example: Bearer
-        '401':
-          description: Invalid username or password
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   /books:
     post:
       tags:
         - Books
       summary: Add a new book to the catalog
+      description: Requires admin role and write:books scope
+      security:
+        - BearerAuth: [write:books]
       requestBody:
         required: true
         content:
@@ -292,6 +398,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Book with this ISBN already exists.
           content:
@@ -303,8 +413,9 @@ paths:
       tags:
         - Books
       summary: Get a paginated list of all books
+      description: Requires read:books scope
       security:
-        - SecurityToken: []
+        - BearerAuth: [read:books]
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Books'
@@ -321,13 +432,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /books/search:
     get:
       tags:
         - Books
       summary: Search for books by name, author, or ISBN
-      # Public in current code
+      description: Requires read:books scope
+      security:
+        - BearerAuth: [read:books]
       parameters:
         - in: query
           name: q
@@ -356,6 +473,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /books/{isbn}/copies:
     parameters:
@@ -369,7 +490,9 @@ paths:
       tags:
         - Copies
       summary: Add multiple copies of an existing book
-      # Public in current code
+      description: Requires admin role and write:books scope
+      security:
+        - BearerAuth: [write:books]
       requestBody:
         required: true
         content:
@@ -390,6 +513,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CopiesAddedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Book not found.
           content:
@@ -407,7 +534,9 @@ paths:
       tags:
         - Copies
       summary: Get a paginated list of all copies for a specific book
-      # Public in current code
+      description: Requires read:books scope
+      security:
+        - BearerAuth: [read:books]
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Copies'
@@ -418,6 +547,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BookCopiesListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Book not found.
           content:
@@ -431,15 +564,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-# --- NEW BORROWS ENDPOINTS ---
   /borrows:
     post:
       tags:
         - Borrows
       summary: Create a new borrow record (Borrow a book copy)
+      description: Requires write:borrows scope
       security:
-        - OAuth2: []
-      # Public in current code
+        - BearerAuth: [write:borrows]
       requestBody:
         required: true
         content:
@@ -478,22 +610,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Book copy not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
     get:
       tags:
         - Borrows
       summary: Get a paginated list of all borrow records
+      description: Requires read:borrows scope
       security:
-        - OAuth2: []
-      # Public in current code
+        - BearerAuth: [read:borrows]
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Books'
@@ -519,6 +653,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
           
   /borrows/{borrow_id}:
     parameters:
@@ -533,12 +669,10 @@ paths:
       tags:
         - Borrows
       summary: Return a book copy (Completes the borrow record)
+      description: Requires write:borrows scope
       security:
-        - OAuth2: []
-      # Public in current code
+        - BearerAuth: [write:borrows]
       requestBody:
-        # PATCH usually implies optional body, but the logic forces the return action.
-        # We can document it as having an empty body or a token to signify the action.
         description: No body required, the PATCH method alone signifies the return action.
         required: false
       responses:
@@ -554,25 +688,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Borrow record or associated book copy not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-# --- END OF NEW BORROWS ENDPOINTS ---
 
   /api/v1/users:
     post:
       tags:
         - Users (v1)
-      summary: Create a new user (Token Required)
-      security:
-        - OAuth2: []
       summary: Create a new user
+      description: Requires admin role and write:users scope
+      security:
+        - BearerAuth: [write:users]
       requestBody:
         required: true
         content:
@@ -605,14 +739,16 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     get:
       tags:
         - Users (v1)
-      summary: Get a paginated list of all users (Token Required)
-      security:
-        - OAuth2: []
       summary: Get a paginated list of all users
+      description: Requires read:users scope
+      security:
+        - BearerAuth: [read:users]
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -625,6 +761,8 @@ paths:
                 $ref: '#/components/schemas/UserListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /api/v1/users/{user_id}:
     parameters:
@@ -632,10 +770,10 @@ paths:
     get:
       tags:
         - Users (v1)
-      summary: Get user details by ID (Token Required)
-      security:
-        - OAuth2: []
       summary: Get user details by ID
+      description: Requires read:users scope
+      security:
+        - BearerAuth: [read:users]
       responses:
         '200':
           description: User details.
@@ -643,14 +781,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: User not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
   /api/v1/users/{user_id}/borrows:
     parameters:
@@ -658,10 +798,10 @@ paths:
     get:
       tags:
         - Users (v1)
-      summary: Get a paginated list of a user's borrow history (Token Required)
-      security:
-        - OAuth2: []
       summary: Get a paginated list of a user's borrow history
+      description: Requires read:borrows scope
+      security:
+        - BearerAuth: [read:borrows]
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -672,23 +812,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BorrowListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: User not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
   /api/v2/users:
     get:
       tags:
         - Users (v2)
-      summary: Get a paginated list of all users (v2, includes extra info) (Token Required)
-      security:
-        - OAuth2: []
       summary: Get a paginated list of all users (v2, includes extra info)
+      description: Requires read:users scope
+      security:
+        - BearerAuth: [read:users]
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -701,6 +843,8 @@ paths:
                 $ref: '#/components/schemas/UserListResponseV2'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /api/v2/users/{user_id}:
     parameters:
@@ -708,10 +852,10 @@ paths:
     get:
       tags:
         - Users (v2)
-      summary: Get user details by ID (v2, uses common v1 response) (Token Required)
-      security:
-        - OAuth2: []
       summary: Get user details by ID (v2, uses common v1 response)
+      description: Requires read:users scope
+      security:
+        - BearerAuth: [read:users]
       responses:
         '200':
           description: User details.
@@ -719,14 +863,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: User not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
   /api/v2/users/{user_id}/borrows:
     parameters:
@@ -734,10 +880,10 @@ paths:
     get:
       tags:
         - Users (v2)
-      summary: Get a paginated list of a user's borrow history (v2, uses common v1 response) (Token Required)
-      security:
-        - OAuth2: []
       summary: Get a paginated list of a user's borrow history (v2, uses common v1 response)
+      description: Requires read:borrows scope
+      security:
+        - BearerAuth: [read:borrows]
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage_Users'
@@ -748,17 +894,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BorrowListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: User not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
 components:
   schemas:
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token (short-lived, 15 minutes)
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
+          type: string
+          description: JWT refresh token (long-lived, 7 days)
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          enum: [Bearer]
+          example: Bearer
+        expires_in:
+          type: integer
+          description: Access token expiration time in seconds
+          example: 900
+        scope:
+          type: string
+          description: Space-separated list of granted scopes
+          example: read:books write:books read:borrows write:borrows
+
     Pagination:
       type: object
       properties:
@@ -807,7 +979,7 @@ components:
           type: integer
           description: Optional HTTP status code.
 
-    # Book Schemas (Retained for completeness)
+    # Book Schemas
     BookListEntry:
       type: object
       properties:
@@ -888,7 +1060,7 @@ components:
                 search_by:
                   type: string
     
-    # Copy Schemas (Retained for completeness)
+    # Copy Schemas
     AddedCopy:
       type: object
       properties:
@@ -981,294 +1153,3 @@ components:
                 total_pages:
                   type: integer
         _links:
-          $ref: '#/components/schemas/Link'
-          
-    # --- NEW BORROW SCHEMAS ---
-    BorrowCreatedResponse:
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            id:
-              type: integer
-              format: int32
-              description: The ID of the new borrow record.
-            user_id:
-              type: integer
-              format: int32
-            copy_id:
-              type: integer
-              format: int32
-            start_date:
-              type: string
-              format: date
-            type:
-              type: string
-              enum: [borrow]
-        _links:
-          type: object
-          properties:
-            self:
-              type: string
-              format: uri
-            user:
-              type: string
-              format: uri
-
-    BorrowReturnedResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int32
-        user_id:
-          type: integer
-          format: int32
-        copy_id:
-          type: integer
-          format: int32
-        start_date:
-          type: string
-          format: date
-        end_date:
-          type: string
-          format: date
-        borrowed_length:
-          type: integer
-          format: int32
-          description: Length of the borrow period in days.
-        _links:
-          type: object
-          properties:
-            self:
-              type: string
-              format: uri
-            user:
-              type: string
-              format: uri
-
-    BorrowListRecord:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int32
-        user_id:
-          type: integer
-          format: int32
-        copy_id:
-          type: integer
-          format: int32
-        start_date:
-          type: string
-          format: date
-          nullable: true
-        end_date:
-          type: string
-          format: date
-          nullable: true
-
-    # User Schemas (Retained for completeness)
-    UserResponse:
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            user_id:
-              type: integer
-              format: int32
-            username:
-              type: string
-            type:
-              type: string
-              enum: [user]
-        _links:
-          type: object
-          properties:
-            self:
-              type: string
-              format: uri
-            borrows:
-              type: string
-              format: uri
-
-    UserListItem:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int32
-        username:
-          type: string
-
-    UserListResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserListItem'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
-        _links:
-          $ref: '#/components/schemas/Link'
-
-    UserListResponseV2:
-      allOf:
-        - $ref: '#/components/schemas/UserListResponse'
-        - type: object
-          properties:
-            data:
-              type: array
-              items:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    format: int32
-                  username:
-                    type: string
-                  extra_info:
-                    type: string
-                    enum: [v2]
-                    description: Extra field added in v2.
-
-    # Borrow Schemas for /users/{id}/borrows (Retained for completeness)
-    BorrowRecord:
-      type: object
-      properties:
-        borrow_id:
-          type: integer
-          format: int32
-        copy_id:
-          type: integer
-          format: int32
-        isbn:
-          type: string
-        book_name:
-          type: string
-          nullable: true
-        start_date:
-          type: string
-          format: date-time
-          nullable: true
-        end_date:
-          type: string
-          format: date-time
-          nullable: true
-
-    BorrowListResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/BorrowRecord'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
-        _links:
-          $ref: '#/components/schemas/Link'
-
-  parameters:
-    Page:
-      in: query
-      name: page
-      schema:
-        type: integer
-        minimum: 1
-        default: 1
-      description: The page number for pagination.
-    
-    PerPage_Books:
-      in: query
-      name: per_page
-      schema:
-        type: integer
-        minimum: 1
-        default: 50
-      description: Number of books or general items per page.
-    
-    PerPage_Search:
-      in: query
-      name: per_page
-      schema:
-        type: integer
-        minimum: 1
-        default: 10
-      description: Number of search results per page.
-
-    PerPage_Copies:
-      in: query
-      name: per_page
-      schema:
-        type: integer
-        minimum: 1
-        default: 50
-      description: Number of book copies per page.
-    
-    PerPage_Users:
-      in: query
-      name: per_page
-      schema:
-        type: integer
-        minimum: 1
-        default: 10
-      description: Number of users/borrows per page.
-
-    UserId:
-      in: path
-      name: user_id
-      schema:
-        type: integer
-        format: int32
-      required: true
-      description: The unique ID of the user.
-
-  securitySchemes:
-    OAuth2:
-      type: oauth2
-      description: OAuth2 client credentials flow
-      flows:
-        clientCredentials:
-          tokenUrl: http://localhost:8080/oauth/token
-          scopes:
-            borrows:read: Read borrow records
-            borrows:write: Create and update borrow records
-    SecurityToken:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: |
-        Use HTTP Bearer auth.
-
-        - Click "Authorize".
-        - Paste the raw JWT only (do not include the word `Bearer`).
-        - Swagger UI will send `Authorization: Bearer <your-token>` automatically.
-
-  responses:
-    Unauthorized:
-      description: Authentication is required or token is invalid.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: 'missing_or_invalid_token'
-              details:
-                type: string
-                example: 'JWT verification failed'
-
-    Forbidden:
-      description: Token is valid but lacks required scope.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: 'insufficient_scope'

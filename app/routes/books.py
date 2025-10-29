@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify
 from database import LocalSession, Book, BookCopy
 from sqlalchemy.orm import joinedload
-from middleware.auth import require_token
+from middleware.auth import require_scope, require_role, require_auth
 
 books_bp = Blueprint('books', __name__, url_prefix='/books')
 
 @books_bp.route('/', methods=['POST'])
+@require_role('admin')
 def add_book():
     data = request.get_json()
     isbn = data.get('isbn')
@@ -52,7 +53,7 @@ def add_book():
         session.close()
 
 @books_bp.route("/", methods=["GET"])
-@require_token
+@require_scope('books:read')
 def get_all_books():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
@@ -96,6 +97,7 @@ def get_all_books():
         session.close()
 
 @books_bp.route("/search", methods=["GET"])
+@require_auth()
 def search_books():
     query = request.args.get('q', '').strip()
     search_by = request.args.get('by', 'all')

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from app.middleware.auth import require_scope
+from middleware.auth import require_scope
 from database import LocalSession, Borrow, BookCopy, Book, User
 
 import datetime
