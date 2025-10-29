@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from database import LocalSession, Book, BookCopy
 from sqlalchemy.orm import joinedload
+from middleware.auth import require_token
 
 books_bp = Blueprint('books', __name__, url_prefix='/books')
 
@@ -51,6 +52,7 @@ def add_book():
         session.close()
 
 @books_bp.route("/", methods=["GET"])
+@require_token
 def get_all_books():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
