@@ -5,3 +5,4 @@ __pycache__/
 venv
 dev_venv
 /auth_service/node_modules
+SOA_lesson_7_demo\venv
