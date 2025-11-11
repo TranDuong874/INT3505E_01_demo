@@ -1,0 +1,596 @@
+openapi: 3.0.0
+info:
+  title: Sample Application Flow OAuth2 Project
+  description: This is an example of using OAuth2 Application Flow in a specification
+    to describe security to your API.
+  version: 1.0.0
+servers:
+- url: /
+security:
+- application:
+  - read
+  - write
+tags:
+- name: Books
+  description: Operations related to books
+- name: Copies
+  description: Operations related to copies of books
+paths:
+  /books:
+    get:
+      tags:
+      - Books
+      summary: List books with pagination
+      operationId: books_get
+      parameters:
+      - name: offset
+        in: query
+        description: Offset for pagination (starting from 0)
+        required: false
+        style: form
+        explode: true
+        schema:
+          minimum: 0
+          type: integer
+          default: 0
+      - name: limit
+        in: query
+        description: Number of items per page
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 100
+          minimum: 1
+          type: integer
+          default: 10
+      - name: page
+        in: query
+        description: Page number for pagination
+        required: false
+        style: form
+        explode: true
+        schema:
+          minimum: 1
+          type: integer
+          format: int32
+          default: 1
+      - name: perPage
+        in: query
+        description: Number of items per page
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 50
+          minimum: 1
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "200":
+          description: A paginated list of books
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inline_response_200"
+      x-openapi-router-controller: swagger_server.controllers.books_controller
+    post:
+      tags:
+      - Books
+      summary: Create a new book
+      operationId: books_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/books_body"
+        required: true
+      responses:
+        "201":
+          description: Book created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+      x-openapi-router-controller: swagger_server.controllers.books_controller
+  /books/{isbn}:
+    get:
+      tags:
+      - Books
+      summary: Get a book by ISBN
+      operationId: books_isbn_get
+      parameters:
+      - name: isbn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Book details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-openapi-router-controller: swagger_server.controllers.books_controller
+    put:
+      tags:
+      - Books
+      summary: Update a book by ISBN
+      operationId: books_isbn_put
+      parameters:
+      - name: isbn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/books_isbn_body"
+        required: true
+      responses:
+        "200":
+          description: Book updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-openapi-router-controller: swagger_server.controllers.books_controller
+    delete:
+      tags:
+      - Books
+      summary: Delete a book by ISBN
+      operationId: books_isbn_delete
+      parameters:
+      - name: isbn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Book deleted successfully
+      x-openapi-router-controller: swagger_server.controllers.books_controller
+  /books/{isbn}/copies:
+    get:
+      tags:
+      - Copies
+      summary: List copies of a book by ISBN
+      operationId: books_isbn_copies_get
+      parameters:
+      - name: isbn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: A list of copies for the book
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Copy"
+                x-content-type: application/json
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-openapi-router-controller: swagger_server.controllers.copies_controller
+    post:
+      tags:
+      - Copies
+      summary: Create a new copy for a book
+      operationId: books_isbn_copies_post
+      parameters:
+      - name: isbn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/isbn_copies_body"
+        required: true
+      responses:
+        "201":
+          description: Copy created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Copy"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-openapi-router-controller: swagger_server.controllers.copies_controller
+  /books/{isbn}/copies/{copy_id}:
+    get:
+      tags:
+      - Copies
+      summary: Get a copy by copy ID for a book
+      operationId: books_isbn_copies_copy_id_get
+      parameters:
+      - name: isbn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: copy_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Copy details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Copy"
+        "404":
+          description: Copy or book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-openapi-router-controller: swagger_server.controllers.copies_controller
+    put:
+      tags:
+      - Copies
+      summary: Update a copy by copy ID for a book
+      operationId: books_isbn_copies_copy_id_put
+      parameters:
+      - name: isbn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: copy_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/copies_copy_id_body"
+        required: true
+      responses:
+        "200":
+          description: Copy updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Copy"
+        "404":
+          description: Copy or book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-openapi-router-controller: swagger_server.controllers.copies_controller
+    delete:
+      tags:
+      - Copies
+      summary: Delete a copy by copy ID for a book
+      operationId: books_isbn_copies_copy_id_delete
+      parameters:
+      - name: isbn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: copy_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Copy deleted successfully
+        "404":
+          description: Copy or book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-openapi-router-controller: swagger_server.controllers.copies_controller
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        isbn:
+          type: string
+        book_name:
+          type: string
+        author:
+          type: string
+        _links:
+          $ref: "#/components/schemas/HateoasLinks"
+      description: A book in the library
+      example:
+        _links:
+          self: self
+          create: create
+          update: update
+          list: list
+          delete: delete
+        author: author
+        isbn: isbn
+        book_name: book_name
+    Copy:
+      type: object
+      properties:
+        copy_id:
+          type: string
+        status:
+          type: string
+        _links:
+          $ref: "#/components/schemas/HateoasLinks"
+      description: A copy of a book
+      example:
+        copy_id: copy_id
+        _links:
+          self: self
+          create: create
+          update: update
+          list: list
+          delete: delete
+        status: status
+    HateoasLinks:
+      type: object
+      properties:
+        self:
+          type: string
+          description: Link to the current resource
+        create:
+          type: string
+          description: Link to create a new resource
+        update:
+          type: string
+          description: Link to update the resource
+        delete:
+          type: string
+          description: Link to delete the resource
+        list:
+          type: string
+          description: Link to list resources
+      description: HATEOAS links for resource navigation
+      example:
+        self: self
+        create: create
+        update: update
+        list: list
+        delete: delete
+    Pagination:
+      required:
+      - page
+      - perPage
+      - totalItems
+      - totalPages
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          example: 1
+        perPage:
+          type: integer
+          format: int32
+          example: 20
+        totalPages:
+          type: integer
+          format: int32
+          example: 10
+        totalItems:
+          type: integer
+          format: int32
+          example: 200
+      example:
+        totalItems: 200
+        perPage: 20
+        totalPages: 10
+        page: 1
+    Error:
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID_INPUT
+        message:
+          type: string
+          example: The provided input is invalid.
+    inline_response_200:
+      type: object
+      properties:
+        offset:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Book"
+        _links:
+          $ref: "#/components/schemas/HateoasLinks"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+      example:
+        total: 1
+        pagination:
+          totalItems: 200
+          perPage: 20
+          totalPages: 10
+          page: 1
+        offset: 0
+        _links: null
+        limit: 6
+        items:
+        - _links:
+            self: self
+            create: create
+            update: update
+            list: list
+            delete: delete
+          author: author
+          isbn: isbn
+          book_name: book_name
+        - _links:
+            self: self
+            create: create
+            update: update
+            list: list
+            delete: delete
+          author: author
+          isbn: isbn
+          book_name: book_name
+    books_body:
+      required:
+      - author
+      - book_name
+      - isbn
+      type: object
+      properties:
+        isbn:
+          type: string
+        book_name:
+          type: string
+        author:
+          type: string
+    books_isbn_body:
+      type: object
+      properties:
+        book_name:
+          type: string
+        author:
+          type: string
+    isbn_copies_body:
+      required:
+      - copy_id
+      - status
+      type: object
+      properties:
+        copy_id:
+          type: string
+        status:
+          type: string
+          description: "Status of the copy (e.g., available, checked out)"
+    copies_copy_id_body:
+      type: object
+      properties:
+        status:
+          type: string
+          description: "Status of the copy (e.g., available, checked out)"
+  parameters:
+    Offset:
+      name: offset
+      in: query
+      description: Offset for pagination (starting from 0)
+      required: false
+      style: form
+      explode: true
+      schema:
+        minimum: 0
+        type: integer
+        default: 0
+    Limit:
+      name: limit
+      in: query
+      description: Number of items per page
+      required: false
+      style: form
+      explode: true
+      schema:
+        maximum: 100
+        minimum: 1
+        type: integer
+        default: 10
+    PageParam:
+      name: page
+      in: query
+      description: Page number for pagination
+      required: false
+      style: form
+      explode: true
+      schema:
+        minimum: 1
+        type: integer
+        format: int32
+        default: 1
+    PerPageParam:
+      name: perPage
+      in: query
+      description: Number of items per page
+      required: false
+      style: form
+      explode: true
+      schema:
+        maximum: 50
+        minimum: 1
+        type: integer
+        format: int32
+        default: 10
+  securitySchemes:
+    application:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: http://example.com/oauth/token
+          scopes:
+            write: allows modifying resources
+            read: allows reading resources
+      x-tokenInfoFunc: swagger_server.controllers.authorization_controller.check_application
+      x-scopeValidateFunc: swagger_server.controllers.authorization_controller.validate_scope_application
+
