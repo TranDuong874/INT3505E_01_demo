@@ -1,0 +1,451 @@
+openapi: 3.0.4
+info:
+  title: Online Shop API
+  description: A sample API for managing products
+  termsOfService: https://example.com/terms
+  contact:
+    email: 22028061@vnu.edu.vn
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 1.0.0
+servers:
+- url: http://localhost:8080
+  description: Development server
+tags:
+- name: product
+  description: Product operations
+paths:
+  /product:
+    get:
+      tags:
+      - product
+      summary: Get a list of products
+      description: Return a list of products
+      operationId: get_products
+      parameters:
+      - name: page
+        in: query
+        description: Page number for pagination
+        required: false
+        style: form
+        explode: true
+        schema:
+          minimum: 1
+          type: integer
+          format: int32
+          default: 1
+      - name: perPage
+        in: query
+        description: Number of items per page
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 50
+          minimum: 1
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inline_response_200"
+      x-openapi-router-controller: swagger_server.controllers.product_controller
+    post:
+      tags:
+      - product
+      summary: Add a new product
+      description: Create a new product in the database
+      operationId: create_product
+      requestBody:
+        description: Add a new product in the store
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+        required: true
+      responses:
+        "201":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+      - api_key: []
+      x-openapi-router-controller: swagger_server.controllers.product_controller
+  /product/{productId}:
+    get:
+      tags:
+      - product
+      summary: Get a product by id
+      description: Request a product by id
+      operationId: get_product_by_id
+      parameters:
+      - name: productId
+        in: path
+        description: The product's id
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+          example: 123
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inline_response_200_1"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-openapi-router-controller: swagger_server.controllers.product_controller
+    put:
+      tags:
+      - product
+      summary: Update a product by id
+      description: "Update a product's quantity, name"
+      operationId: update_product
+      parameters:
+      - name: productId
+        in: path
+        description: The product's id
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+          example: 123
+      requestBody:
+        description: Update a product's attribute by productId
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+        required: true
+      responses:
+        "200":
+          description: Successful update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+      - api_key: []
+      x-openapi-router-controller: swagger_server.controllers.product_controller
+    delete:
+      tags:
+      - product
+      summary: Delete a product by id
+      description: Remove a product permanently
+      operationId: delete_product
+      parameters:
+      - name: productId
+        in: path
+        description: The product's id
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+          example: 123
+      responses:
+        "200":
+          description: Product deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inline_response_200_2"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+      - api_key: []
+      x-openapi-router-controller: swagger_server.controllers.product_controller
+components:
+  schemas:
+    ProductInput:
+      required:
+      - productCode
+      - productName
+      - quantity
+      type: object
+      properties:
+        productName:
+          type: string
+          example: Dell Laptop
+        productCode:
+          type: integer
+          format: int64
+          example: 66771508
+        quantity:
+          type: integer
+          format: int32
+          example: 12
+    Product:
+      required:
+      - id
+      - productCode
+      - productName
+      - quantity
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 69
+        productName:
+          type: string
+          example: Dell Laptop
+        productCode:
+          type: integer
+          format: int64
+          example: 66771508
+        quantity:
+          type: integer
+          format: int32
+          example: 12
+      example:
+        productCode: 66771508
+        quantity: 12
+        id: 69
+        productName: Dell Laptop
+    Error:
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID_INPUT
+        message:
+          type: string
+          example: The provided input is invalid
+    Pagination:
+      required:
+      - page
+      - perPage
+      - totalItems
+      - totalPages
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          example: 1
+        perPage:
+          type: integer
+          format: int32
+          example: 20
+        totalPages:
+          type: integer
+          format: int32
+          example: 10
+        totalItems:
+          type: integer
+          format: int32
+          example: 200
+      example:
+        totalItems: 200
+        perPage: 20
+        totalPages: 10
+        page: 1
+    Link:
+      required:
+      - href
+      - method
+      - rel
+      type: object
+      properties:
+        href:
+          type: string
+          example: /product?page=2
+        rel:
+          type: string
+          example: next
+        method:
+          type: string
+          example: GET
+      example:
+        method: GET
+        rel: next
+        href: /product?page=2
+    inline_response_200:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        _links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+      example:
+        pagination:
+          totalItems: 200
+          perPage: 20
+          totalPages: 10
+          page: 1
+        _links:
+        - method: GET
+          rel: next
+          href: /product?page=2
+        - method: GET
+          rel: next
+          href: /product?page=2
+        products:
+        - productCode: 66771508
+          quantity: 12
+          id: 69
+          productName: Dell Laptop
+        - productCode: 66771508
+          quantity: 12
+          id: 69
+          productName: Dell Laptop
+    inline_response_200_1:
+      type: object
+      properties:
+        product:
+          $ref: "#/components/schemas/Product"
+        _links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+      example:
+        product:
+          productCode: 66771508
+          quantity: 12
+          id: 69
+          productName: Dell Laptop
+        _links:
+        - method: GET
+          rel: next
+          href: /product?page=2
+        - method: GET
+          rel: next
+          href: /product?page=2
+    inline_response_200_2:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Product deleted successfully
+      example:
+        message: Product deleted successfully
+  parameters:
+    ProductIdParam:
+      name: productId
+      in: path
+      description: The product's id
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: integer
+        format: int64
+        example: 123
+    PageParam:
+      name: page
+      in: query
+      description: Page number for pagination
+      required: false
+      style: form
+      explode: true
+      schema:
+        minimum: 1
+        type: integer
+        format: int32
+        default: 1
+    PerPageParam:
+      name: perPage
+      in: query
+      description: Number of items per page
+      required: false
+      style: form
+      explode: true
+      schema:
+        maximum: 50
+        minimum: 1
+        type: integer
+        format: int32
+        default: 10
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
+      x-apikeyInfoFunc: swagger_server.controllers.authorization_controller.check_api_key
+

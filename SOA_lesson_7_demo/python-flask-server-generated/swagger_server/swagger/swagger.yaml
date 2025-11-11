@@ -188,6 +188,7 @@ components:
           type: integer
           format: int64
           example: 69
+          readOnly: true
         productName:
           type: string
           example: Dell Laptop
