@@ -6,10 +6,10 @@ info:
   version: 1.0.0
 servers:
 - url: /
-security:
-- application:
-  - read
-  - write
+# security:
+# - application:
+#   - read
+#   - write
 tags:
 - name: Books
   description: Operations related to books
