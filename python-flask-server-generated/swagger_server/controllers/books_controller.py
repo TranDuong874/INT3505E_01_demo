@@ -54,7 +54,7 @@ def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
 
         books = db.query(BookModel).options(
             joinedload(BookModel.copies)
-        ).offset(offset_val).limit(limit_val).all()
+        ).offset(offset).limit(limit).all()
 
         items = [_db_book_to_book(book) for book in books]
         
@@ -66,8 +66,8 @@ def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
         )
         
         response = InlineResponse200(
-            offset=offset_val,
-            limit=limit_val,
+            offset=offset,
+            limit=limit,
             total=total_items,
             items=items,
             links=None,
