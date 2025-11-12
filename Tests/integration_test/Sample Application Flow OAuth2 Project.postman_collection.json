@@ -1,0 +1,1348 @@
+{
+	"info": {
+		"_postman_id": "db216332-61f9-4eed-bcb1-b72d26b66d47",
+		"name": "Sample Application Flow OAuth2 Project",
+		"description": "This is an example of using OAuth2 Application Flow in a specification to describe security to your API.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "31389541"
+	},
+	"item": [
+		{
+			"name": "books",
+			"item": [
+				{
+					"name": "{isbn}",
+					"item": [
+						{
+							"name": "copies",
+							"item": [
+								{
+									"name": "{copy_id}",
+									"item": [
+										{
+											"name": "Get a copy by copy ID for a book",
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"books",
+														":isbn",
+														"copies",
+														":copy_id"
+													],
+													"variable": [
+														{
+															"key": "isbn",
+															"value": "string"
+														},
+														{
+															"key": "copy_id",
+															"value": "string"
+														}
+													]
+												}
+											},
+											"response": [
+												{
+													"name": "Copy details",
+													"originalRequest": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json"
+															}
+														],
+														"url": {
+															"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+															"host": [
+																"{{baseUrl}}"
+															],
+															"path": [
+																"books",
+																":isbn",
+																"copies",
+																":copy_id"
+															],
+															"variable": [
+																{
+																	"key": "isbn"
+																},
+																{
+																	"key": "copy_id"
+																}
+															]
+														}
+													},
+													"status": "OK",
+													"code": 200,
+													"_postman_previewlanguage": "json",
+													"header": [
+														{
+															"key": "Content-Type",
+															"value": "application/json"
+														}
+													],
+													"cookie": [],
+													"body": "{\n  \"copy_id\": \"copy_id\",\n  \"_links\": {\n    \"self\": \"self\",\n    \"create\": \"create\",\n    \"update\": \"update\",\n    \"list\": \"list\",\n    \"delete\": \"delete\"\n  },\n  \"status\": \"status\"\n}"
+												},
+												{
+													"name": "Copy or book not found",
+													"originalRequest": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json"
+															}
+														],
+														"url": {
+															"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+															"host": [
+																"{{baseUrl}}"
+															],
+															"path": [
+																"books",
+																":isbn",
+																"copies",
+																":copy_id"
+															],
+															"variable": [
+																{
+																	"key": "isbn"
+																},
+																{
+																	"key": "copy_id"
+																}
+															]
+														}
+													},
+													"status": "Not Found",
+													"code": 404,
+													"_postman_previewlanguage": "json",
+													"header": [
+														{
+															"key": "Content-Type",
+															"value": "application/json"
+														}
+													],
+													"cookie": [],
+													"body": "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"The provided input is invalid.\"\n}"
+												}
+											]
+										},
+										{
+											"name": "Update a copy by copy ID for a book",
+											"request": {
+												"method": "PUT",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"status\": \"string\"\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"books",
+														":isbn",
+														"copies",
+														":copy_id"
+													],
+													"variable": [
+														{
+															"key": "isbn",
+															"value": "string"
+														},
+														{
+															"key": "copy_id",
+															"value": "string"
+														}
+													]
+												}
+											},
+											"response": [
+												{
+													"name": "Copy updated successfully",
+													"originalRequest": {
+														"method": "PUT",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\n  \"status\": \"string\"\n}",
+															"options": {
+																"raw": {
+																	"headerFamily": "json",
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+															"host": [
+																"{{baseUrl}}"
+															],
+															"path": [
+																"books",
+																":isbn",
+																"copies",
+																":copy_id"
+															],
+															"variable": [
+																{
+																	"key": "isbn"
+																},
+																{
+																	"key": "copy_id"
+																}
+															]
+														}
+													},
+													"status": "OK",
+													"code": 200,
+													"_postman_previewlanguage": "json",
+													"header": [
+														{
+															"key": "Content-Type",
+															"value": "application/json"
+														}
+													],
+													"cookie": [],
+													"body": "{\n  \"copy_id\": \"copy_id\",\n  \"_links\": {\n    \"self\": \"self\",\n    \"create\": \"create\",\n    \"update\": \"update\",\n    \"list\": \"list\",\n    \"delete\": \"delete\"\n  },\n  \"status\": \"status\"\n}"
+												},
+												{
+													"name": "Copy or book not found",
+													"originalRequest": {
+														"method": "PUT",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\n  \"status\": \"string\"\n}",
+															"options": {
+																"raw": {
+																	"headerFamily": "json",
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+															"host": [
+																"{{baseUrl}}"
+															],
+															"path": [
+																"books",
+																":isbn",
+																"copies",
+																":copy_id"
+															],
+															"variable": [
+																{
+																	"key": "isbn"
+																},
+																{
+																	"key": "copy_id"
+																}
+															]
+														}
+													},
+													"status": "Not Found",
+													"code": 404,
+													"_postman_previewlanguage": "json",
+													"header": [
+														{
+															"key": "Content-Type",
+															"value": "application/json"
+														}
+													],
+													"cookie": [],
+													"body": "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"The provided input is invalid.\"\n}"
+												}
+											]
+										},
+										{
+											"name": "Delete a copy by copy ID for a book",
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"books",
+														":isbn",
+														"copies",
+														":copy_id"
+													],
+													"variable": [
+														{
+															"key": "isbn",
+															"value": "string"
+														},
+														{
+															"key": "copy_id",
+															"value": "string"
+														}
+													]
+												}
+											},
+											"response": [
+												{
+													"name": "Copy deleted successfully",
+													"originalRequest": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+															"host": [
+																"{{baseUrl}}"
+															],
+															"path": [
+																"books",
+																":isbn",
+																"copies",
+																":copy_id"
+															],
+															"variable": [
+																{
+																	"key": "isbn"
+																},
+																{
+																	"key": "copy_id"
+																}
+															]
+														}
+													},
+													"status": "No Content",
+													"code": 204,
+													"_postman_previewlanguage": "text",
+													"header": [],
+													"cookie": [],
+													"body": null
+												},
+												{
+													"name": "Copy or book not found",
+													"originalRequest": {
+														"method": "DELETE",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json"
+															}
+														],
+														"url": {
+															"raw": "{{baseUrl}}/books/:isbn/copies/:copy_id",
+															"host": [
+																"{{baseUrl}}"
+															],
+															"path": [
+																"books",
+																":isbn",
+																"copies",
+																":copy_id"
+															],
+															"variable": [
+																{
+																	"key": "isbn"
+																},
+																{
+																	"key": "copy_id"
+																}
+															]
+														}
+													},
+													"status": "Not Found",
+													"code": 404,
+													"_postman_previewlanguage": "json",
+													"header": [
+														{
+															"key": "Content-Type",
+															"value": "application/json"
+														}
+													],
+													"cookie": [],
+													"body": "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"The provided input is invalid.\"\n}"
+												}
+											]
+										}
+									]
+								},
+								{
+									"name": "List copies of a book by ISBN",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/books/:isbn/copies",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"books",
+												":isbn",
+												"copies"
+											],
+											"variable": [
+												{
+													"key": "isbn",
+													"value": "string"
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "A list of copies for the book",
+											"originalRequest": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{baseUrl}}/books/:isbn/copies",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"books",
+														":isbn",
+														"copies"
+													],
+													"variable": [
+														{
+															"key": "isbn"
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												}
+											],
+											"cookie": [],
+											"body": "[\n  {\n    \"copy_id\": \"copy_id\",\n    \"_links\": {\n      \"self\": \"self\",\n      \"create\": \"create\",\n      \"update\": \"update\",\n      \"list\": \"list\",\n      \"delete\": \"delete\"\n    },\n    \"status\": \"status\"\n  },\n  {\n    \"copy_id\": \"copy_id\",\n    \"_links\": {\n      \"self\": \"self\",\n      \"create\": \"create\",\n      \"update\": \"update\",\n      \"list\": \"list\",\n      \"delete\": \"delete\"\n    },\n    \"status\": \"status\"\n  }\n]"
+										},
+										{
+											"name": "Book not found",
+											"originalRequest": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{baseUrl}}/books/:isbn/copies",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"books",
+														":isbn",
+														"copies"
+													],
+													"variable": [
+														{
+															"key": "isbn"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												}
+											],
+											"cookie": [],
+											"body": "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"The provided input is invalid.\"\n}"
+										}
+									]
+								},
+								{
+									"name": "Create a new copy for a book",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"copy_id\": \"string\",\n  \"status\": \"string\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/books/:isbn/copies",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"books",
+												":isbn",
+												"copies"
+											],
+											"variable": [
+												{
+													"key": "isbn",
+													"value": "string"
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "Copy created successfully",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"copy_id\": \"string\",\n  \"status\": \"string\"\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/books/:isbn/copies",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"books",
+														":isbn",
+														"copies"
+													],
+													"variable": [
+														{
+															"key": "isbn"
+														}
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												}
+											],
+											"cookie": [],
+											"body": "{\n  \"copy_id\": \"copy_id\",\n  \"_links\": {\n    \"self\": \"self\",\n    \"create\": \"create\",\n    \"update\": \"update\",\n    \"list\": \"list\",\n    \"delete\": \"delete\"\n  },\n  \"status\": \"status\"\n}"
+										},
+										{
+											"name": "Book not found",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"copy_id\": \"string\",\n  \"status\": \"string\"\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/books/:isbn/copies",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"books",
+														":isbn",
+														"copies"
+													],
+													"variable": [
+														{
+															"key": "isbn"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												}
+											],
+											"cookie": [],
+											"body": "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"The provided input is invalid.\"\n}"
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "Get a book by ISBN",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/books/:isbn",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"books",
+										":isbn"
+									],
+									"variable": [
+										{
+											"key": "isbn",
+											"value": "string"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Book details",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/books/:isbn",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"books",
+												":isbn"
+											],
+											"variable": [
+												{
+													"key": "isbn"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"_links\": {\n    \"self\": \"self\",\n    \"create\": \"create\",\n    \"update\": \"update\",\n    \"list\": \"list\",\n    \"delete\": \"delete\"\n  },\n  \"author\": \"author\",\n  \"isbn\": \"isbn\",\n  \"book_name\": \"book_name\"\n}"
+								},
+								{
+									"name": "Book not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/books/:isbn",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"books",
+												":isbn"
+											],
+											"variable": [
+												{
+													"key": "isbn"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"The provided input is invalid.\"\n}"
+								}
+							]
+						},
+						{
+							"name": "Update a book by ISBN",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"book_name\": \"string\",\n  \"author\": \"string\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/books/:isbn",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"books",
+										":isbn"
+									],
+									"variable": [
+										{
+											"key": "isbn",
+											"value": "string"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Book updated successfully",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"book_name\": \"string\",\n  \"author\": \"string\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/books/:isbn",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"books",
+												":isbn"
+											],
+											"variable": [
+												{
+													"key": "isbn"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"_links\": {\n    \"self\": \"self\",\n    \"create\": \"create\",\n    \"update\": \"update\",\n    \"list\": \"list\",\n    \"delete\": \"delete\"\n  },\n  \"author\": \"author\",\n  \"isbn\": \"isbn\",\n  \"book_name\": \"book_name\"\n}"
+								},
+								{
+									"name": "Book not found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"book_name\": \"string\",\n  \"author\": \"string\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/books/:isbn",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"books",
+												":isbn"
+											],
+											"variable": [
+												{
+													"key": "isbn"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"The provided input is invalid.\"\n}"
+								}
+							]
+						},
+						{
+							"name": "Delete a book by ISBN",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/books/:isbn",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"books",
+										":isbn"
+									],
+									"variable": [
+										{
+											"key": "isbn",
+											"value": "string"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Book deleted successfully",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/books/:isbn",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"books",
+												":isbn"
+											],
+											"variable": [
+												{
+													"key": "isbn"
+												}
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": null
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "List books with pagination",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/books?offset=0&limit=10&page=1&perPage=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books"
+							],
+							"query": [
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Offset for pagination (starting from 0)"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of items per page"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								},
+								{
+									"key": "perPage",
+									"value": "10",
+									"description": "Number of items per page"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "A paginated list of books",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/books?offset=0&limit=10&page=1&perPage=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"books"
+									],
+									"query": [
+										{
+											"key": "offset",
+											"value": "0",
+											"description": "Offset for pagination (starting from 0)"
+										},
+										{
+											"key": "limit",
+											"value": "10",
+											"description": "Number of items per page"
+										},
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Page number for pagination"
+										},
+										{
+											"key": "perPage",
+											"value": "10",
+											"description": "Number of items per page"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"total\": 1,\n  \"pagination\": {\n    \"totalItems\": 200,\n    \"perPage\": 20,\n    \"totalPages\": 10,\n    \"page\": 1\n  },\n  \"offset\": 0,\n  \"_links\": null,\n  \"limit\": 6,\n  \"items\": [\n    {\n      \"_links\": {\n        \"self\": \"self\",\n        \"create\": \"create\",\n        \"update\": \"update\",\n        \"list\": \"list\",\n        \"delete\": \"delete\"\n      },\n      \"author\": \"author\",\n      \"isbn\": \"isbn\",\n      \"book_name\": \"book_name\"\n    },\n    {\n      \"_links\": {\n        \"self\": \"self\",\n        \"create\": \"create\",\n        \"update\": \"update\",\n        \"list\": \"list\",\n        \"delete\": \"delete\"\n      },\n      \"author\": \"author\",\n      \"isbn\": \"isbn\",\n      \"book_name\": \"book_name\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Create a new book",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"author\": \"string\",\n  \"book_name\": \"string\",\n  \"isbn\": \"string\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Book created successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"author\": \"string\",\n  \"book_name\": \"string\",\n  \"isbn\": \"string\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/books",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"books"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"_links\": {\n    \"self\": \"self\",\n    \"create\": \"create\",\n    \"update\": \"update\",\n    \"list\": \"list\",\n    \"delete\": \"delete\"\n  },\n  \"author\": \"author\",\n  \"isbn\": \"isbn\",\n  \"book_name\": \"book_name\"\n}"
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"requests": {},
+				"exec": [
+					"// Pre-request script for Sample Application Flow OAuth2 Project Collection",
+					"",
+					"// Helper function to validate ISBN format (ISBN-10 or ISBN-13)",
+					"pm.collectionVariables.set(\"validateISBN\", function(isbn) {",
+					"    if (!isbn) return false;",
+					"    ",
+					"    // Remove hyphens and spaces",
+					"    const cleanISBN = isbn.replace(/[-\\s]/g, '');",
+					"    ",
+					"    // Check if it's ISBN-10 or ISBN-13",
+					"    if (cleanISBN.length === 10 || cleanISBN.length === 13) {",
+					"        return /^[0-9X]+$/.test(cleanISBN);",
+					"    }",
+					"    return false;",
+					"});",
+					"",
+					"// Log request information for debugging",
+					"console.log(`[Pre-Request] ${pm.info.requestName}`);",
+					"console.log(`[Pre-Request] Method: ${pm.request.method}`);",
+					"console.log(`[Pre-Request] URL: ${pm.request.url.toString()}`);",
+					"",
+					"// Set timestamp for request tracking",
+					"pm.collectionVariables.set(\"requestTimestamp\", new Date().toISOString());",
+					"",
+					"// Validate ISBN in path variables if present",
+					"if (pm.request.url.path && pm.request.url.path.includes(':isbn')) {",
+					"    const pathVariables = pm.request.url.variable;",
+					"    if (pathVariables) {",
+					"        pathVariables.forEach(variable => {",
+					"            if (variable.key === 'isbn' && variable.value) {",
+					"                console.log(`[Pre-Request] ISBN in path: ${variable.value}`);",
+					"            }",
+					"        });",
+					"    }",
+					"}",
+					"",
+					"// Validate copy_id in path variables if present",
+					"if (pm.request.url.path && pm.request.url.path.includes(':copy_id')) {",
+					"    const pathVariables = pm.request.url.variable;",
+					"    if (pathVariables) {",
+					"        pathVariables.forEach(variable => {",
+					"            if (variable.key === 'copy_id' && variable.value) {",
+					"                console.log(`[Pre-Request] Copy ID in path: ${variable.value}`);",
+					"            }",
+					"        });",
+					"    }",
+					"}",
+					"",
+					"// Log pagination parameters for list requests",
+					"if (pm.request.url.query && pm.request.url.query.count() > 0) {",
+					"    console.log('[Pre-Request] Query Parameters:');",
+					"    pm.request.url.query.each(param => {",
+					"        console.log(`  ${param.key}: ${param.value}`);",
+					"    });",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"requests": {},
+				"exec": [
+					"const reqName = pm.info.requestName;",
+					"const method = pm.request.method;",
+					"const code = pm.response.code;",
+					"const time = pm.response.responseTime;",
+					"",
+					"console.log(`[Test] ${reqName} → ${code} (${time}ms)`);",
+					"",
+					"",
+					"// response check -> ping to server and check test for response",
+					"pm.test(\"Response exists\", () => {",
+					"    pm.expect(pm.response).to.not.be.undefined;",
+					"});",
+					"",
+					"pm.test(\"Response time < 2000ms\", () => {",
+					"    pm.expect(time).to.be.below(2000);",
+					"});",
+					"",
+					"",
+					"// Status code validation -> check if server only return allowed response codes",
+					"pm.test(\"Valid status code\", () => {",
+					"    const validCodes = [200, 201, 204, 400, 401, 404, 422, 500];",
+					"    pm.expect(validCodes).to.include(code);",
+					"});",
+					"",
+					"// Method-specific quick checks",
+					"if (method === \"GET\") {",
+					"    pm.test(\"GET → 200 or 404\", () => pm.expect(code).to.be.oneOf([200, 404]));",
+					"} else if (method === \"POST\") {",
+					"    pm.test(\"POST → 201 or error\", () => pm.expect(code).to.be.oneOf([201, 400, 409, 422]));",
+					"} else if (method === \"PUT\") {",
+					"    pm.test(\"PUT → 200 or 404\", () => pm.expect(code).to.be.oneOf([200, 404, 422]));",
+					"} else if (method === \"DELETE\") {",
+					"    pm.test(\"DELETE → 200 or 204\", () => pm.expect(code).to.be.oneOf([200, 204, 404]));",
+					"}",
+					"",
+					"// check if server response with correct format",
+					"if (code !== 204) {",
+					"    pm.test(\"Has Content-Type header\", () => {",
+					"        pm.response.to.have.header(\"Content-Type\");",
+					"    });",
+					"}",
+					"",
+					"let data = {};",
+					"try { data = pm.response.json(); } catch (e) {}",
+					"",
+					"if (code >= 200 && code < 300 && data) {",
+					"    pm.test(\"Response is valid JSON object or array\", () => {",
+					"        pm.expect(data).to.satisfy(d => Array.isArray(d) || typeof d === \"object\");",
+					"    });",
+					"",
+					"    // Example for /books endpoints",
+					"    if (reqName.toLowerCase().includes(\"book\")) {",
+					"        pm.test(\"Contains 'isbn' field if applicable\", () => {",
+					"            const item = Array.isArray(data) ? data[0] : data;",
+					"            if (item) pm.expect(item).to.have.property(\"isbn\");",
+					"        });",
+					"    }",
+					"}",
+					"",
+					"// test error response",
+					"if (code >= 400) {",
+					"    pm.test(\"Error response has body\", () => {",
+					"        pm.expect(pm.response.text()).to.not.be.empty;",
+					"    });",
+					"",
+					"    try {",
+					"        const err = pm.response.json();",
+					"        pm.test(\"Error has details\", () => {",
+					"            pm.expect(err.error || err.message || err.detail).to.exist;",
+					"        });",
+					"    } catch (e) {",
+					"        console.log(\"Non-JSON error body\");",
+					"    }",
+					"}",
+					"",
+					"console.log(`[Summary] ${reqName}: ${code} in ${time}ms`);",
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "/"
+		},
+		{
+			"key": "validateISBN",
+			"value": ""
+		},
+		{
+			"key": "requestTimestamp",
+			"value": ""
+		},
+		{
+			"key": "lastCreatedISBN",
+			"value": ""
+		}
+	]
+}
