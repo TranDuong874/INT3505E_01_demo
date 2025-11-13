@@ -1,4 +1,4 @@
-flask_testing==0.8.0
+flask_testing==0.8.1
 coverage>=4.0.3
 pytest>=7.0
 pluggy>=1.0.0

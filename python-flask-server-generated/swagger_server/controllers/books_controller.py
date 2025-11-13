@@ -15,6 +15,15 @@ from swagger_server.controllers.authorization_controller import check_applicatio
 
 from swagger_server.middleware.require_auth import require_auth
 
+_CACHE = {}
+_CACHE_ENABLED = False  
+
+def _cache_key_list(page, per_page):
+    return f"list:page={page}:per={per_page}"
+
+def _cache_key_book(isbn):
+    return f"book:isbn={isbn}"
+
 
 def _db_book_to_book(db_book):
     """Convert database Book model to API Book model"""
@@ -43,10 +52,17 @@ def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
     :rtype: InlineResponse200
     """
     try:
-        db = next(get_db())
-        
         page = max(1, page or 1)
         per_page = max(1, min(50, per_page or 10))  # default 10, max 50
+
+        # quick cache check
+        if _CACHE_ENABLED:
+            key = _cache_key_list(page, per_page)
+            if key in _CACHE:
+                print(f"CACHE HIT {key}")
+                return _CACHE[key]
+
+        db = next(get_db())
 
         total_items = db.query(BookModel).count()
         offset = (page - 1) * per_page
@@ -57,14 +73,14 @@ def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
         ).offset(offset).limit(limit).all()
 
         items = [_db_book_to_book(book) for book in books]
-        
+
         pagination = Pagination(
             page=page,
             per_page=per_page,
             total_pages=total_pages,
             total_items=total_items
         )
-        
+
         response = InlineResponse200(
             offset=offset,
             limit=limit,
@@ -73,12 +89,23 @@ def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
             links=None,
             pagination=pagination
         )
-        
+
+        if _CACHE_ENABLED:
+            try:
+                _CACHE[key] = (response, 200)
+                print(f"CACHE SET {key}")
+            except Exception:
+                pass
+
         return response, 200
     except Exception as e:
         return Error(code=500, message=f"Internal server error: {str(e)}"), 500
     finally:
-        db.close()
+        if 'db' in locals() and db is not None:
+            try:
+                db.close()
+            except Exception:
+                pass
 
 
 def books_isbn_delete(isbn):  # noqa: E501
@@ -104,16 +131,32 @@ def books_isbn_delete(isbn):  # noqa: E501
         if not book:
             return Error(code=404, message="Book not found"), 404
         
-        # Delete the book (cascading will handle copies if configured)
+        deleted_book_data = {
+            "isbn": book.isbn,
+            "title": book.book_name,
+            "author": book.author,
+        }
+
         db.delete(book)
         db.commit()
-        
-        return None, 204
+        # clear cache on mutation
+        if _CACHE_ENABLED:
+            try:
+                _CACHE.clear()
+                print("CACHE CLEARED (delete)")
+            except Exception:
+                pass
+
+        return deleted_book_data, 200 # Change 'Book' to none to invoke fail test, error code 204 will discard output
     except Exception as e:
         db.rollback()
         return Error(code=500, message=f"Internal server error: {str(e)}"), 500
     finally:
-        db.close()
+        if 'db' in locals() and db is not None:
+            try:
+                db.close()
+            except Exception:
+                pass
 
 
 def books_isbn_get(isbn):  # noqa: E501

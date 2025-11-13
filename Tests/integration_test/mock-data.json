@@ -1,0 +1,20 @@
+[
+  {
+    "test_bookTitle": "Dune",
+    "test_bookAuthor": "Frank Herbert",
+    "test_bookISBN": "ISBN-001",
+    "test_CopyStatus": "Available"
+  },
+  {
+    "test_bookTitle": "The Martian",
+    "test_bookAuthor": "Andy Weir",
+    "test_bookISBN": "ISBN-002",
+    "test_CopyStatus": "available"
+  },
+  {
+    "test_bookTitle": "1984",
+    "test_bookAuthor": "George Orwell",
+    "test_bookISBN": "ISBN-003",
+    "test_CopyStatus": "missing"
+  }
+]
