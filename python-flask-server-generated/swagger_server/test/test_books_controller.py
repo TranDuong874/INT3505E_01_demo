@@ -18,9 +18,7 @@ class TestBooksController(BaseTestCase):
 
     def test_books_get_returns_200_with_pagination(self):
         """Test that GET /books returns 200 with proper pagination structure"""
-        query_string = [('offset', 0),
-                        ('limit', 10),
-                        ('page', 1),
+        query_string = [('page', 1),
                         ('per_page', 10)]
         response = self.client.open(
             '/books',

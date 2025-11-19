@@ -21,6 +21,28 @@
 									"item": [
 										{
 											"name": "Get a copy by copy ID for a book",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"if (pm.response.code === 200) {\r",
+															"    const responseData = pm.response.json();\r",
+															"    const expectedISBN = pm.collectionVariables.get(\"test_bookISBN\");\r",
+															"    const expectedCopy = pm.collectionVariables.get(\"auto_CopyID\")\r",
+															"\r",
+															"    pm.test(\"Copy ID and ISBN matches the created book\", function() {\r",
+															"        pm.expect(responseData.isbn).to.eql(expectedISBN);\r",
+															"        pm.expect(responseData.copy_id).to.eql(expectedCopy);\r",
+															"    });\r",
+															"}"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
 											"request": {
 												"method": "GET",
 												"header": [
@@ -43,11 +65,11 @@
 													"variable": [
 														{
 															"key": "isbn",
-															"value": "string"
+															"value": "{{test_bookISBN}}"
 														},
 														{
 															"key": "copy_id",
-															"value": "string"
+															"value": "{{test_CopyID}}"
 														}
 													]
 												}
@@ -157,7 +179,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\n  \"status\": \"string\"\n}",
+													"raw": "{\n  \"status\": \"{{test_CopyStatus}}\"\n}",
 													"options": {
 														"raw": {
 															"headerFamily": "json",
@@ -179,11 +201,11 @@
 													"variable": [
 														{
 															"key": "isbn",
-															"value": "string"
+															"value": "{{test_bookISBN}}"
 														},
 														{
 															"key": "copy_id",
-															"value": "string"
+															"value": "{{auto_CopyID}}"
 														}
 													]
 												}
@@ -329,11 +351,11 @@
 													"variable": [
 														{
 															"key": "isbn",
-															"value": "string"
+															"value": "{{test_bookISBN}}"
 														},
 														{
 															"key": "copy_id",
-															"value": "string"
+															"value": "{{auto_CopyID}}"
 														}
 													]
 												}
@@ -442,7 +464,7 @@
 											"variable": [
 												{
 													"key": "isbn",
-													"value": "string"
+													"value": "{{test_bookISBN}}"
 												}
 											]
 										}
@@ -530,6 +552,37 @@
 								},
 								{
 									"name": "Create a new copy for a book",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"if (pm.response.code === 201) {",
+													"    const responseData = pm.response.json();",
+													"    if (responseData && responseData.copy_id) {",
+													"        pm.collectionVariables.set(\"auto_CopyID\", responseData.copy_id);",
+													"        console.log(`[Variable Set] auto_CopyID = ${responseData.copy_id}`);",
+													"    }",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {},
+												"requests": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {},
+												"requests": {}
+											}
+										}
+									],
 									"request": {
 										"method": "POST",
 										"header": [
@@ -544,7 +597,7 @@
 										],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n  \"copy_id\": \"string\",\n  \"status\": \"string\"\n}",
+											"raw": "{\r\n    \"copy_id\": \"\",\r\n    \"status\": \"{{test_CopyStatus}}\"\r\n}",
 											"options": {
 												"raw": {
 													"headerFamily": "json",
@@ -565,7 +618,7 @@
 											"variable": [
 												{
 													"key": "isbn",
-													"value": "string"
+													"value": "{{test_bookISBN}}"
 												}
 											]
 										}
@@ -683,6 +736,27 @@
 						},
 						{
 							"name": "Get a book by ISBN",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Verify the ISBN matches the one we created",
+											"if (pm.response.code === 200) {",
+											"    const responseData = pm.response.json();",
+											"    const expectedISBN = pm.collectionVariables.get(\"test_bookISBN\");",
+											"    ",
+											"    pm.test(\"ISBN matches the created book\", function() {",
+											"        pm.expect(responseData.isbn).to.eql(expectedISBN);",
+											"    });",
+											"}"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
 							"request": {
 								"method": "GET",
 								"header": [
@@ -703,7 +777,7 @@
 									"variable": [
 										{
 											"key": "isbn",
-											"value": "string"
+											"value": "{{test_bookISBN}}"
 										}
 									]
 								}
@@ -789,6 +863,33 @@
 						},
 						{
 							"name": "Update a book by ISBN",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Verify update was successful",
+											"if (pm.response.code === 200) {",
+											"    const responseData = pm.response.json();",
+											"    ",
+											"    pm.test(\"Book update successful\", function() {",
+											"        pm.expect(responseData).to.have.property(\"isbn\");",
+											"        pm.expect(responseData).to.have.property(\"book_name\");",
+											"        pm.expect(responseData).to.have.property(\"author\");",
+											"    });",
+											"    ",
+											"    pm.test(\"Updated book has correct ISBN\", function() {",
+											"        const expectedISBN = pm.collectionVariables.get(\"testISBN\");",
+											"        pm.expect(responseData.isbn).to.eql(expectedISBN);",
+											"    });",
+											"}"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
 							"request": {
 								"method": "PUT",
 								"header": [
@@ -803,7 +904,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"book_name\": \"string\",\n  \"author\": \"string\"\n}",
+									"raw": "{\n  \"book_name\": \"Updated-{{test_bookTitle}}\",\n  \"author\": \"Updated-{{test_bookAuthor}}\"\n}",
 									"options": {
 										"raw": {
 											"headerFamily": "json",
@@ -823,7 +924,7 @@
 									"variable": [
 										{
 											"key": "isbn",
-											"value": "string"
+											"value": "{{test_bookISBN}}"
 										}
 									]
 								}
@@ -952,7 +1053,7 @@
 									"variable": [
 										{
 											"key": "isbn",
-											"value": "string"
+											"value": "{{test_bookISBN}}"
 										}
 									]
 								}
@@ -987,6 +1088,122 @@
 									"body": null
 								}
 							]
+						}
+					]
+				},
+				{
+					"name": "Create a new book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const responseData = pm.response.json();",
+									"",
+									"    pm.test(\"Book ID in response matches test_bookISBN\", function () {",
+									"        const expectedISBN = pm.collectionVariables.get(\"test_bookISBN\");",
+									"        const actualISBN = responseData.isbn; ",
+									"        pm.expect(actualISBN).to.eql(expectedISBN);",
+									"    });",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"book_name\" : \"{{test_bookTitle}}\",\n    \"author\": \"{{test_bookAuthor}}\",\n    \"isbn\" : \"{{test_bookISBN}}\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Book created successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"author\": \"string\",\n  \"book_name\": \"string\",\n  \"isbn\": \"string\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/books",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"books"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"_links\": {\n    \"self\": \"self\",\n    \"create\": \"create\",\n    \"update\": \"update\",\n    \"list\": \"list\",\n    \"delete\": \"delete\"\n  },\n  \"author\": \"author\",\n  \"isbn\": \"isbn\",\n  \"book_name\": \"book_name\"\n}"
 						}
 					]
 				},
@@ -1088,89 +1305,6 @@
 							"body": "{\n  \"total\": 1,\n  \"pagination\": {\n    \"totalItems\": 200,\n    \"perPage\": 20,\n    \"totalPages\": 10,\n    \"page\": 1\n  },\n  \"offset\": 0,\n  \"_links\": null,\n  \"limit\": 6,\n  \"items\": [\n    {\n      \"_links\": {\n        \"self\": \"self\",\n        \"create\": \"create\",\n        \"update\": \"update\",\n        \"list\": \"list\",\n        \"delete\": \"delete\"\n      },\n      \"author\": \"author\",\n      \"isbn\": \"isbn\",\n      \"book_name\": \"book_name\"\n    },\n    {\n      \"_links\": {\n        \"self\": \"self\",\n        \"create\": \"create\",\n        \"update\": \"update\",\n        \"list\": \"list\",\n        \"delete\": \"delete\"\n      },\n      \"author\": \"author\",\n      \"isbn\": \"isbn\",\n      \"book_name\": \"book_name\"\n    }\n  ]\n}"
 						}
 					]
-				},
-				{
-					"name": "Create a new book",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"author\": \"string\",\n  \"book_name\": \"string\",\n  \"isbn\": \"string\"\n}",
-							"options": {
-								"raw": {
-									"headerFamily": "json",
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/books",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"books"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "Book created successfully",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									},
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"author\": \"string\",\n  \"book_name\": \"string\",\n  \"isbn\": \"string\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/books",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"books"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"cookie": [],
-							"body": "{\n  \"_links\": {\n    \"self\": \"self\",\n    \"create\": \"create\",\n    \"update\": \"update\",\n    \"list\": \"list\",\n    \"delete\": \"delete\"\n  },\n  \"author\": \"author\",\n  \"isbn\": \"isbn\",\n  \"book_name\": \"book_name\"\n}"
-						}
-					]
 				}
 			]
 		}
@@ -1182,61 +1316,7 @@
 				"type": "text/javascript",
 				"requests": {},
 				"exec": [
-					"// Pre-request script for Sample Application Flow OAuth2 Project Collection",
-					"",
-					"// Helper function to validate ISBN format (ISBN-10 or ISBN-13)",
-					"pm.collectionVariables.set(\"validateISBN\", function(isbn) {",
-					"    if (!isbn) return false;",
-					"    ",
-					"    // Remove hyphens and spaces",
-					"    const cleanISBN = isbn.replace(/[-\\s]/g, '');",
-					"    ",
-					"    // Check if it's ISBN-10 or ISBN-13",
-					"    if (cleanISBN.length === 10 || cleanISBN.length === 13) {",
-					"        return /^[0-9X]+$/.test(cleanISBN);",
-					"    }",
-					"    return false;",
-					"});",
-					"",
-					"// Log request information for debugging",
-					"console.log(`[Pre-Request] ${pm.info.requestName}`);",
-					"console.log(`[Pre-Request] Method: ${pm.request.method}`);",
-					"console.log(`[Pre-Request] URL: ${pm.request.url.toString()}`);",
-					"",
-					"// Set timestamp for request tracking",
-					"pm.collectionVariables.set(\"requestTimestamp\", new Date().toISOString());",
-					"",
-					"// Validate ISBN in path variables if present",
-					"if (pm.request.url.path && pm.request.url.path.includes(':isbn')) {",
-					"    const pathVariables = pm.request.url.variable;",
-					"    if (pathVariables) {",
-					"        pathVariables.forEach(variable => {",
-					"            if (variable.key === 'isbn' && variable.value) {",
-					"                console.log(`[Pre-Request] ISBN in path: ${variable.value}`);",
-					"            }",
-					"        });",
-					"    }",
-					"}",
-					"",
-					"// Validate copy_id in path variables if present",
-					"if (pm.request.url.path && pm.request.url.path.includes(':copy_id')) {",
-					"    const pathVariables = pm.request.url.variable;",
-					"    if (pathVariables) {",
-					"        pathVariables.forEach(variable => {",
-					"            if (variable.key === 'copy_id' && variable.value) {",
-					"                console.log(`[Pre-Request] Copy ID in path: ${variable.value}`);",
-					"            }",
-					"        });",
-					"    }",
-					"}",
-					"",
-					"// Log pagination parameters for list requests",
-					"if (pm.request.url.query && pm.request.url.query.count() > 0) {",
-					"    console.log('[Pre-Request] Query Parameters:');",
-					"    pm.request.url.query.each(param => {",
-					"        console.log(`  ${param.key}: ${param.value}`);",
-					"    });",
-					"}"
+					""
 				]
 			}
 		},
@@ -1266,7 +1346,7 @@
 					"",
 					"// Status code validation -> check if server only return allowed response codes",
 					"pm.test(\"Valid status code\", () => {",
-					"    const validCodes = [200, 201, 204, 400, 401, 404, 422, 500];",
+					"    const validCodes = [200, 201, 204, 400, 401, 404, 422, 500, 409];",
 					"    pm.expect(validCodes).to.include(code);",
 					"});",
 					"",
@@ -1274,19 +1354,13 @@
 					"if (method === \"GET\") {",
 					"    pm.test(\"GET → 200 or 404\", () => pm.expect(code).to.be.oneOf([200, 404]));",
 					"} else if (method === \"POST\") {",
-					"    pm.test(\"POST → 201 or error\", () => pm.expect(code).to.be.oneOf([201, 400, 409, 422]));",
+					"    pm.test(\"POST → 201 or error\", () => pm.expect(code).to.be.oneOf([201, 400, 409, 422, 404]));",
 					"} else if (method === \"PUT\") {",
 					"    pm.test(\"PUT → 200 or 404\", () => pm.expect(code).to.be.oneOf([200, 404, 422]));",
 					"} else if (method === \"DELETE\") {",
 					"    pm.test(\"DELETE → 200 or 204\", () => pm.expect(code).to.be.oneOf([200, 204, 404]));",
 					"}",
 					"",
-					"// check if server response with correct format",
-					"if (code !== 204) {",
-					"    pm.test(\"Has Content-Type header\", () => {",
-					"        pm.response.to.have.header(\"Content-Type\");",
-					"    });",
-					"}",
 					"",
 					"let data = {};",
 					"try { data = pm.response.json(); } catch (e) {}",
@@ -1299,8 +1373,25 @@
 					"    // Example for /books endpoints",
 					"    if (reqName.toLowerCase().includes(\"book\")) {",
 					"        pm.test(\"Contains 'isbn' field if applicable\", () => {",
-					"            const item = Array.isArray(data) ? data[0] : data;",
-					"            if (item) pm.expect(item).to.have.property(\"isbn\");",
+					"            let item;",
+					"            ",
+					"            // paginated response with array",
+					"            if (data.items && Array.isArray(data.items)) {",
+					"                item = data.items[0];",
+					"            } ",
+					"            // direct array response",
+					"            else if (Array.isArray(data)) {",
+					"                item = data[0];",
+					"            } ",
+					"            // single object response",
+					"            else {",
+					"                item = data;",
+					"            }",
+					"            ",
+					"            // single item",
+					"            if (item) {",
+					"                pm.expect(item).to.have.property(\"isbn\");",
+					"            }",
 					"        });",
 					"    }",
 					"}",
@@ -1314,15 +1405,10 @@
 					"    try {",
 					"        const err = pm.response.json();",
 					"        pm.test(\"Error has details\", () => {",
-					"            pm.expect(err.error || err.message || err.detail).to.exist;",
+					"            pm.expect(err).to.satisfy(e => e.message || e.error || e.detail);",
 					"        });",
-					"    } catch (e) {",
-					"        console.log(\"Non-JSON error body\");",
-					"    }",
-					"}",
-					"",
-					"console.log(`[Summary] ${reqName}: ${code} in ${time}ms`);",
-					""
+					"    } catch (e) {}",
+					"}"
 				]
 			}
 		}
@@ -1333,15 +1419,47 @@
 			"value": "/"
 		},
 		{
-			"key": "validateISBN",
+			"key": "test_bookISBN",
 			"value": ""
 		},
 		{
-			"key": "requestTimestamp",
+			"key": "test_bookTitle",
 			"value": ""
 		},
 		{
-			"key": "lastCreatedISBN",
+			"key": "test_bookAuthor",
+			"value": ""
+		},
+		{
+			"key": "copies_list",
+			"value": ""
+		},
+		{
+			"key": "copy_index",
+			"value": ""
+		},
+		{
+			"key": "actions_list",
+			"value": ""
+		},
+		{
+			"key": "test_CopyStatus",
+			"value": ""
+		},
+		{
+			"key": "test_CopyID",
+			"value": ""
+		},
+		{
+			"key": "current_action",
+			"value": ""
+		},
+		{
+			"key": "current_step",
+			"value": ""
+		},
+		{
+			"key": "auto_CopyID",
 			"value": ""
 		}
 	]

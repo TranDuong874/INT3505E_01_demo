@@ -12,6 +12,7 @@ from swagger_server.models.hateoas_links import HateoasLinks  # noqa: E501
 from swagger_server import util
 from swagger_server.database import get_db, Book as BookModel
 from swagger_server.controllers.authorization_controller import check_application
+from swagger_server.service.utils import normalize_pagination
 
 from swagger_server.middleware.require_auth import require_auth
 
@@ -35,15 +36,11 @@ def _db_book_to_book(db_book):
     )
 
 
-def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
+def books_get(page=None, per_page=None):  # noqa: E501
     """List books with pagination
 
      # noqa: E501
 
-    :param offset: Offset for pagination (starting from 0)
-    :type offset: int
-    :param limit: Number of items per page
-    :type limit: int
     :param page: Page number for pagination
     :type page: int
     :param per_page: Number of items per page
@@ -52,8 +49,7 @@ def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
     :rtype: InlineResponse200
     """
     try:
-        page = max(1, page or 1)
-        per_page = max(1, min(50, per_page or 10))  # default 10, max 50
+        page, per_page = normalize_pagination(page, per_page)
 
         # quick cache check
         if _CACHE_ENABLED:
@@ -70,7 +66,7 @@ def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
 
         books = db.query(BookModel).options(
             joinedload(BookModel.copies)
-        ).offset(offset).limit(limit).all()
+        ).offset(offset).limit(per_page).all()
 
         items = [_db_book_to_book(book) for book in books]
 
@@ -82,8 +78,7 @@ def books_get(offset=None, limit=None, page=None, per_page=None):  # noqa: E501
         )
 
         response = InlineResponse200(
-            offset=offset,
-            limit=limit,
+            limit=per_page,
             total=total_items,
             items=items,
             links=None,

@@ -17,11 +17,9 @@ class InlineResponse200(Model):
 
     Do not edit the class manually.
     """
-    def __init__(self, offset: int=None, limit: int=None, total: int=None, items: List[Book]=None, links: HateoasLinks=None, pagination: Pagination=None):  # noqa: E501
+    def __init__(self, limit: int=None, total: int=None, items: List[Book]=None, links: HateoasLinks=None, pagination: Pagination=None):  # noqa: E501
         """InlineResponse200 - a model defined in Swagger
 
-        :param offset: The offset of this InlineResponse200.  # noqa: E501
-        :type offset: int
         :param limit: The limit of this InlineResponse200.  # noqa: E501
         :type limit: int
         :param total: The total of this InlineResponse200.  # noqa: E501
@@ -34,7 +32,6 @@ class InlineResponse200(Model):
         :type pagination: Pagination
         """
         self.swagger_types = {
-            'offset': int,
             'limit': int,
             'total': int,
             'items': List[Book],
@@ -43,14 +40,12 @@ class InlineResponse200(Model):
         }
 
         self.attribute_map = {
-            'offset': 'offset',
             'limit': 'limit',
             'total': 'total',
             'items': 'items',
             'links': '_links',
             'pagination': 'pagination'
         }
-        self._offset = offset
         self._limit = limit
         self._total = total
         self._items = items
@@ -67,27 +62,6 @@ class InlineResponse200(Model):
         :rtype: InlineResponse200
         """
         return util.deserialize_model(dikt, cls)
-
-    @property
-    def offset(self) -> int:
-        """Gets the offset of this InlineResponse200.
-
-
-        :return: The offset of this InlineResponse200.
-        :rtype: int
-        """
-        return self._offset
-
-    @offset.setter
-    def offset(self, offset: int):
-        """Sets the offset of this InlineResponse200.
-
-
-        :param offset: The offset of this InlineResponse200.
-        :type offset: int
-        """
-
-        self._offset = offset
 
     @property
     def limit(self) -> int:
