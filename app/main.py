@@ -1,5 +1,6 @@
-from flask import Flask, send_file, render_template
+from flask import Flask, send_file, render_template, Response
 from flask_cors import CORS
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from app.database.connection import init_db
 from app.routes.books_v1_route import books_bp
 from app.utils.logger import setup_logging
@@ -37,6 +38,12 @@ def openapi_spec():
     return send_file(openapi_path, mimetype='text/yaml')
 
 
+@app.route('/metrics')
+def metrics():
+    """Expose Prometheus metrics"""
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, use_reloader=False)
 
