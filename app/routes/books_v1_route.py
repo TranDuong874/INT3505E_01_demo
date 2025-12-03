@@ -1,6 +1,6 @@
 from flask import jsonify, request
 from flask import Blueprint
-
+from app.middleware.limiter import limiter
 from app.database.connection import SessionLocal
 from app.services import books_service
 from app.models.books_model import (
@@ -20,8 +20,8 @@ def get_base_url():
     """Get base URL for HATEOAS links"""
     return request.host_url.rstrip('/') + '/v1/books'
 
-
 @books_bp.route('/', methods=['GET'])
+@limiter.limit("1 per second")
 def get_books():
     """List all books with pagination"""
     db = get_db()
@@ -59,8 +59,8 @@ def get_books():
     finally:
         db.close()
 
-
 @books_bp.route('/', methods=['POST'])
+@limiter.limit("1 per second")
 def create_book():
     """Create a new book"""
     db = get_db()
@@ -78,8 +78,8 @@ def create_book():
     finally:
         db.close()
 
-
 @books_bp.route('/<int:book_id>', methods=['GET'])
+@limiter.limit("1 per second")
 def get_book(book_id):
     """Get a book by ID"""
     db = get_db()
@@ -96,8 +96,8 @@ def get_book(book_id):
     finally:
         db.close()
 
-
 @books_bp.route('/<int:book_id>', methods=['PUT'])
+@limiter.limit("1 per second")
 def update_book(book_id):
     """Update a book"""
     db = get_db()
@@ -121,6 +121,7 @@ def update_book(book_id):
 
 
 @books_bp.route('/<int:book_id>', methods=['DELETE'])
+@limiter.limit("1 per second")
 def delete_book(book_id):
     """Delete a book"""
     db = get_db()

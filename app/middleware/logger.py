@@ -2,6 +2,7 @@ import time
 from flask import request, g
 from functools import wraps
 from app.utils.logger import get_logger
+from flask_limiter.errors import RateLimitExceeded
 
 logger = get_logger(__name__)
 
@@ -122,6 +123,19 @@ def setup_request_logging(app):
             }
         )
         return {"error": "Resource not found"}, 404
+    
+    @app.errorhandler(RateLimitExceeded)
+    def handle_rate_limit(e):
+        logger.warning(
+            "Rate limit exceeded",
+            extra={
+                "method": request.method,
+                "path": request.path,
+                "ip": request.remote_addr,
+                "limit": str(e.description)
+            }
+        )
+        return {"error": "Rate limit exceeded", "message": str(e.description)}, 429 # rate limit error code
     
     @app.errorhandler(Exception)
     def handle_exception(e):

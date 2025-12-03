@@ -4,23 +4,24 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from app.database.connection import init_db
 from app.routes.books_v1_route import books_bp
 from app.utils.logger import setup_logging
-from app.middleware.logging_middleware import setup_request_logging
+from app.middleware.logger import setup_request_logging
+from app.middleware.limiter import limiter
 import os
 
-# Setup logging first
 logger = setup_logging(app_name="books-api")
 
 app = Flask(__name__, template_folder='templates')
 
+# Setup request/response logging (must be before limiter to catch rate limit errors)
+setup_request_logging(app)
+
+limiter.init_app(app)
+
 # Enable CORS for all routes
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Setup request/response logging
-setup_request_logging(app)
-
 app.register_blueprint(books_bp)
 
-# Initialize database
 init_db()
 logger.info("Application started", extra={"environment": "development"})
 
