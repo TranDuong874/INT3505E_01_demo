@@ -1,7 +1,25 @@
 openapi: 3.0.3
 info:
   title: Books API
-  description: A RESTful API for managing books with HATEOAS support
+  description: |
+    A RESTful API for managing books with HATEOAS support.
+    
+    ## Authentication
+    This API uses JWT Bearer token authentication. Get a token from the Auth Server:
+    
+    ```bash
+    curl -X POST http://localhost:3001/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{"username": "admin", "password": "admin123"}'
+    ```
+    
+    ## Available Users
+    | Username | Password | Role | Permissions |
+    |----------|----------|------|-------------|
+    | admin | admin123 | admin | read, create, update, delete |
+    | user | user123 | user | read, create, update |
+    | guest | guest123 | guest | read |
+    
   version: 1.0.0
 
 servers:
@@ -18,7 +36,9 @@ paths:
       tags:
         - Books
       summary: List all books
-      description: Returns a paginated list of books with HATEOAS links
+      description: Returns a paginated list of books with HATEOAS links. Requires 'read' permission.
+      security:
+        - BearerAuth: []
       parameters:
         - name: page
           in: query
@@ -39,12 +59,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedBooks'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
 
     post:
       tags:
         - Books
       summary: Create a new book
-      description: Creates a new book record in the database
+      description: Creates a new book record in the database. Requires 'create' permission.
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -64,13 +98,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
 
   /v1/books/{book_id}:
     get:
       tags:
         - Books
       summary: Get a book by ID
-      description: Returns a single book with HATEOAS links
+      description: Returns a single book with HATEOAS links. Requires 'read' permission.
+      security:
+        - BearerAuth: []
       parameters:
         - name: book_id
           in: path
@@ -85,6 +133,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BookHATEOAS'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Book not found
           content:
@@ -96,7 +156,9 @@ paths:
       tags:
         - Books
       summary: Update a book
-      description: Updates an existing book (partial update supported)
+      description: Updates an existing book (partial update supported). Requires 'update' permission.
+      security:
+        - BearerAuth: []
       parameters:
         - name: book_id
           in: path
@@ -123,6 +185,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Book not found
           content:
@@ -134,7 +208,9 @@ paths:
       tags:
         - Books
       summary: Delete a book
-      description: Permanently removes a book from the database
+      description: Permanently removes a book from the database. Requires 'delete' permission (admin only).
+      security:
+        - BearerAuth: []
       parameters:
         - name: book_id
           in: path
@@ -149,6 +225,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Book not found
           content:
@@ -157,6 +245,15 @@ paths:
                 $ref: '#/components/schemas/Error'
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token from Auth Server. Get token via:
+        POST http://localhost:3001/auth/login
+        
   schemas:
     Link:
       type: object
@@ -274,3 +371,16 @@ components:
         error:
           type: string
           example: Book not found
+
+    ForbiddenError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Forbidden
+        message:
+          type: string
+          example: Permission 'delete' required
+        your_role:
+          type: string
+          example: guest
