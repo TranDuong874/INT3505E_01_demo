@@ -54,7 +54,7 @@ def get_books():
             data=books_hateoas,
             links=collection_links,
             page=page,
-            per_page=per_page
+            per_page=per_page,
         )
         
         return jsonify(response.model_dump()), 200

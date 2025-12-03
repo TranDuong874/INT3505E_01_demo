@@ -6,11 +6,15 @@ from app.routes.books_v1_route import books_bp
 from app.utils.logger import setup_logging
 from app.middleware.logger import setup_request_logging
 from app.middleware.limiter import limiter
+from app.middleware.waf import setup_waf
 import os
 
 logger = setup_logging(app_name="books-api")
 
 app = Flask(__name__, template_folder='templates')
+
+# Setup WAF (logs suspicious requests)
+setup_waf(app)
 
 # Setup request/response logging (must be before limiter to catch rate limit errors)
 setup_request_logging(app)
