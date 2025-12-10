@@ -35,6 +35,15 @@ def create_book(db, book_data: BookCreate):
         books_created_total.inc()
         books_count.inc()
         
+        notify('book_created', {
+            "id": book_db.id,
+            "title": book_db.title,
+            "author": book_db.author,
+            "price": book_db.price,
+            "isbn": book_db.isbn,
+            "in_stock": book_db.in_stock
+        })
+
         logger.info("Book created successfully", extra={"book_id": book_db.id, "title": book_db.title})
         return book_db
     except Exception as e:
