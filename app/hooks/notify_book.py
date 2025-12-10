@@ -1,4 +1,4 @@
-TARGET_ENDPOINT='http://localhost:5000' # Test endpoint
+TARGET_ENDPOINT='http://localhost:5001/webhook/notify' # Test endpoint
 
 def notify(method, data=None):
     payload = {
