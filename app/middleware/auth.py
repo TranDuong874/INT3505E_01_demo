@@ -2,21 +2,26 @@ import requests
 from functools import wraps
 from flask import request, jsonify, g
 from app.utils.logger import get_logger
+from app.middleware import circuit_breaker
 
 logger = get_logger(__name__)
 
 AUTH_SERVER_URL = "http://localhost:3001"
 
+auth_breaker = CircuitBreaker(failure_threshold=3. recovery_timeout=10)
 
 def _call_auth_server(endpoint, token, json_data=None):
     """Call auth server"""
-    return requests.post(
-        f"{AUTH_SERVER_URL}{endpoint}",
-        headers={"Authorization": f"Bearer {token}"},
-        json=json_data,
-        timeout=5
-    )
-
+    @auth_breaker.call
+    def call():
+        return requests.post(
+            f"{AUTH_SERVER_URL}{endpoint}",
+            headers={"Authorization": f"Bearer {token}"},
+            json=json_data,
+            timeout=5
+        )
+    return call()
+    
 
 def require_auth(permission=None):
     """
