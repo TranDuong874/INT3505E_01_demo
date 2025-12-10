@@ -7,3 +7,4 @@ dev_venv
 /auth_service/node_modules
 SOA_lesson_7_demo\venv
 node_modules/
+venv/
